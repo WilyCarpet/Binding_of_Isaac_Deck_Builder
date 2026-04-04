@@ -1,0 +1,218 @@
+<main class="layout">
+  <!-- ===== LEFT COLUMN: Ratios ===== -->
+  <section class="panel">
+    <h1>Four Souls Deck Builder</h1>
+
+    <h2>Ratios</h2>
+    <div class="form-row">
+      <label for="ratios">Deckbuilder Ratio:</label>
+      <select id="ratios" [(ngModel)]="ratio" (change)="onRatioChange()">
+        <option value="o">Official</option>
+        <option value="d">Draft</option>
+        <option value="c">Custom</option>
+      </select>
+    </div>
+
+    <div class="ratio-section">
+      <h3>Loot Deck</h3>
+      <div class="form-row" *ngFor="let key of LOOT_KEYS">
+        <label>{{ LABEL_MAP[key] }}:</label>
+        <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+      </div>
+
+      <h3>Monster Deck</h3>
+      <div class="form-row" *ngFor="let key of MONSTER_KEYS">
+        <label>{{ LABEL_MAP[key] }}:</label>
+        <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+      </div>
+
+      <h3>Treasure Deck</h3>
+      <div class="form-row" *ngFor="let key of TREASURE_KEYS">
+        <label>{{ LABEL_MAP[key] }}:</label>
+        <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+      </div>
+
+      <h3>Souls</h3>
+      <div class="form-row">
+        <label>{{ LABEL_MAP['sd_s'] }}:</label>
+        <input type="number" min="0" [(ngModel)]="ratioValues['sd_s']" [disabled]="ratio !== 'c'">
+      </div>
+
+      <h3>Rooms</h3>
+      <div class="form-row">
+        <label>{{ LABEL_MAP['rd_r'] }}:</label>
+        <input type="number" min="0" [(ngModel)]="ratioValues['rd_r']" [disabled]="ratio !== 'c'">
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RIGHT COLUMN: Players & Decks ===== -->
+  <section class="panel">
+    <h2>Players &amp; Misc</h2>
+    <div class="form-row">
+      <label for="seed">Seed:</label>
+      <input type="text" id="seed" maxlength="8" [(ngModel)]="seed" placeholder="optional">
+    </div>
+
+    <div class="form-row checkbox-row">
+      <label for="specplayers">Specify Players?</label>
+      <input type="checkbox" id="specplayers" [(ngModel)]="specplayers">
+    </div>
+
+    <div class="player-rules" *ngIf="specplayers">
+      <div class="form-row">
+        <label for="players">Players:</label>
+        <input type="number" id="players" [(ngModel)]="players" min="2" max="12">
+      </div>
+      <div class="form-row checkbox-row">
+        <label for="eternalshuffle">Eternal Shuffle?</label>
+        <input type="checkbox" id="eternalshuffle" [(ngModel)]="eternalshuffle">
+      </div>
+    </div>
+
+    <hr>
+    <h2>Decks</h2>
+
+    <h3>Core Decks</h3>
+    <hr>
+    <div class="deck-list">
+      <label class="deck-item" *ngFor="let d of coreDeckState">
+        <input type="checkbox" [(ngModel)]="d.checked">
+        <span>{{ d.label }}</span>
+      </label>
+    </div>
+
+    <h3>Promotional Decks</h3>
+    <hr>
+    <div class="deck-list">
+      <label class="deck-item" *ngFor="let d of promoDeckState">
+        <input type="checkbox" [(ngModel)]="d.checked">
+        <span>{{ d.label }}</span>
+      </label>
+    </div>
+
+    <h3>Other / New Releases</h3>
+    <hr>
+    <div class="deck-list">
+      <label class="deck-item" *ngFor="let d of otherDeckState">
+        <input type="checkbox" [(ngModel)]="d.checked">
+        <span>{{ d.label }}</span>
+      </label>
+    </div>
+
+    <hr>
+    <button class="build-btn" (click)="buildDeck()" [disabled]="building">
+      {{ building ? 'Building...' : 'Build Deck' }}
+    </button>
+    <p class="error" *ngIf="buildError">{{ buildError }}</p>
+  </section>
+
+  <!-- ===== RESULTS (full-width row) ===== -->
+  <section class="panel results-panel" *ngIf="deckResult">
+    <h2>Generated Deck &mdash; {{ totalCards() }} cards total</h2>
+
+    <div class="warnings" *ngIf="buildWarnings.length > 0">
+      <strong>Warnings:</strong>
+      <ul>
+        <li *ngFor="let w of buildWarnings">{{ w }}</li>
+      </ul>
+    </div>
+    <p class="seed-note" *ngIf="resultSeed">Seed used: <code>{{ resultSeed }}</code></p>
+
+    <!-- Characters -->
+    <div class="result-group" *ngIf="deckResult.characters && deckResult.characters.length > 0">
+      <h3>Characters ({{ deckResult.characters.length }})</h3>
+      <div class="card-grid">
+        <div class="card-tile" *ngFor="let c of deckResult.characters">
+          <strong>{{ c['Name'] }}</strong>
+          <span class="set-tag">{{ c['Set'] }}</span>
+          <span>HP {{ c['HP'] }} / ATK {{ c['ATK'] }}</span>
+          <p class="effect">{{ c['Effect'] }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loot -->
+    <div class="result-group">
+      <h3>Loot Deck ({{ countCards(deckResult.loot) }})</h3>
+      <div *ngFor="let entry of sectionEntries(deckResult.loot)" class="subsection">
+        <h4>{{ LABEL_MAP[entry[0]] }} ({{ entry[1].length }})</h4>
+        <div class="card-grid">
+          <div class="card-tile" *ngFor="let c of entry[1]">
+            <strong>{{ c['Name'] }}</strong>
+            <span class="set-tag">{{ c['Set'] }}</span>
+            <p class="effect">{{ c['Effect'] }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monster -->
+    <div class="result-group">
+      <h3>Monster Deck ({{ countCards(deckResult.monster) }})</h3>
+      <div *ngFor="let entry of sectionEntries(deckResult.monster)" class="subsection">
+        <h4>{{ LABEL_MAP[entry[0]] }} ({{ entry[1].length }})</h4>
+        <div class="card-grid">
+          <div class="card-tile" *ngFor="let c of entry[1]">
+            <strong>{{ c['Name'] }}</strong>
+            <span class="set-tag">{{ c['Set'] }}</span>
+            <span *ngIf="c['HP']">HP {{ c['HP'] }} / ATK {{ c['ATK'] }}</span>
+            <p class="effect">{{ c['Effect'] }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Treasure -->
+    <div class="result-group">
+      <h3>Treasure Deck ({{ countCards(deckResult.treasure) }})</h3>
+      <div *ngFor="let entry of sectionEntries(deckResult.treasure)" class="subsection">
+        <h4>{{ LABEL_MAP[entry[0]] }} ({{ entry[1].length }})</h4>
+        <div class="card-grid">
+          <div class="card-tile" *ngFor="let c of entry[1]">
+            <strong>{{ c['Name'] }}</strong>
+            <span class="set-tag">{{ c['Set'] }}</span>
+            <span>{{ c['Effect Type'] }}</span>
+            <p class="effect">{{ c['Effect'] }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Souls -->
+    <div class="result-group" *ngIf="countCards(deckResult.souls) > 0">
+      <h3>Souls ({{ countCards(deckResult.souls) }})</h3>
+      <div class="card-grid">
+        <div class="card-tile" *ngFor="let c of deckResult.souls['sd_s']">
+          <strong>{{ c['Name'] }}</strong>
+          <span class="set-tag">{{ c['Set'] }}</span>
+          <p class="effect">{{ c['Effect'] }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rooms -->
+    <div class="result-group" *ngIf="countCards(deckResult.rooms) > 0">
+      <h3>Rooms ({{ countCards(deckResult.rooms) }})</h3>
+      <div class="card-grid">
+        <div class="card-tile" *ngFor="let c of deckResult.rooms['rd_r']">
+          <strong>{{ c['Name'] }}</strong>
+          <span class="set-tag">{{ c['Set'] }}</span>
+          <p class="effect">{{ c['Effect'] }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Eternal -->
+    <div class="result-group" *ngIf="deckResult.eternal && deckResult.eternal.length > 0">
+      <h3>Eternal Treasure ({{ deckResult.eternal.length }})</h3>
+      <div class="card-grid">
+        <div class="card-tile" *ngFor="let c of deckResult.eternal">
+          <strong>{{ c['Name'] }}</strong>
+          <span class="set-tag">{{ c['Set'] }}</span>
+          <p class="effect">{{ c['Effect'] }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

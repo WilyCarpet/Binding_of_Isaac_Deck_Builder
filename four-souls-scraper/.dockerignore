@@ -1,0 +1,22 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore virtual environment directories
+venv/
+env/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore Docker-related files
+Dockerfile
+.dockerignore
+
+# Ignore any local configuration files
+*.local
+*.env
+
+# Ignore output files
+*.xlsx
+*.csv

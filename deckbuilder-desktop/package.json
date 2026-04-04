@@ -1,0 +1,18 @@
+{
+    "name": "deckbuilder-desktop",
+    "version": "0.1.0",
+    "private": true,
+    "main": "electron/main.js",
+    "scripts": {
+        "dev:preflight": "bash -lc 'for p in 4200 5001; do pids=$(lsof -t -i :$p || true); if [ -n \"$pids\" ]; then echo \"Killing stale process(es) on port $p: $pids\"; kill $pids || true; fi; done'",
+        "dev:frontend": "cd frontend && npm run start -- --host 127.0.0.1 --port 4200",
+        "dev:electron": "wait-on tcp:4200 && electron --no-sandbox --disable-gpu .",
+        "dev": "npm run dev:preflight && concurrently -k \"npm run dev:frontend\" \"npm run dev:electron\""
+    },
+    "devDependencies": {
+        "concurrently": "^9.0.1",
+        "cross-env": "^7.0.3",
+        "electron": "^32.1.2",
+        "wait-on": "^8.0.1"
+    }
+}
