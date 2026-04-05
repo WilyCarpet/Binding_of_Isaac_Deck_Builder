@@ -1,0 +1,232 @@
+:host {
+    display: block;
+    min-height: 100vh;
+    color: #f5f3ef;
+}
+
+.layout {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    background:
+        radial-gradient(circle at 5% 10%, #553322 0%, transparent 35%),
+        radial-gradient(circle at 95% 90%, #0d4855 0%, transparent 45%),
+        #1a1d22;
+}
+
+.panel {
+    background: rgba(17, 20, 24, 0.84);
+    border: 1px solid #324150;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    backdrop-filter: blur(2px);
+    overflow-y: auto;
+    max-height: 92vh;
+}
+
+.subtitle {
+    margin: 0.25rem 0 0.8rem;
+    color: #b8c8d4;
+    font-size: 0.9rem;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.stat-box {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #3b4855;
+    border-radius: 8px;
+    padding: 0.45rem 0.55rem;
+
+    .stat-label {
+        display: block;
+        color: #a8bdce;
+        font-size: 0.72rem;
+        margin-bottom: 0.2rem;
+    }
+
+    strong {
+        color: #f1e4d3;
+        font-size: 1.05rem;
+    }
+}
+
+.filters {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+
+    label {
+        display: grid;
+        gap: 0.25rem;
+        font-size: 0.85rem;
+        color: #d0dae4;
+    }
+
+    input[type='text'],
+    input[type='number'],
+    select {
+        border-radius: 6px;
+        border: 1px solid #4b5d70;
+        background: #14181d;
+        color: #f5f3ef;
+        font-size: 0.85rem;
+        padding: 0.35rem 0.45rem;
+    }
+}
+
+.owned-only-toggle {
+    display: flex !important;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.build-btn {
+    width: 100%;
+    padding: 0.55rem;
+    border-radius: 8px;
+    border: 1px solid #cc7356;
+    background: #9f4a2f;
+    color: #f5f3ef;
+    font-size: 0.95rem;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        background: #bf5a3a;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+}
+
+.error {
+    color: #ff9898;
+    margin-top: 0.7rem;
+    font-size: 0.9rem;
+}
+
+.loading-note {
+    color: #b8c8d4;
+    font-size: 0.9rem;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.6rem;
+    margin-top: 0.55rem;
+}
+
+.card-tile {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #3b4855;
+    border-radius: 8px;
+    padding: 0.5rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.78rem;
+
+    strong {
+        font-size: 0.84rem;
+        color: #e8dcd0;
+        text-align: left;
+    }
+}
+
+.card-open {
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+}
+
+.meta {
+    color: #9eb0bf;
+    font-size: 0.72rem;
+}
+
+.table-tag {
+    width: fit-content;
+    background: #222f3a;
+    border-radius: 4px;
+    padding: 0 4px;
+}
+
+.set-tag {
+    display: inline-block;
+    background: #1e3040;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 0.7rem;
+    color: #7ab0cc;
+    width: fit-content;
+}
+
+.ownership-row {
+    margin-top: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.count-row {
+    display: grid;
+    gap: 0.2rem;
+
+    input {
+        width: 100%;
+    }
+}
+
+.tile-image-wrapper {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 0.35rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #2f3944;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+}
+
+.tile-image-fallback {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    margin-bottom: 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.35rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #2f3944;
+    color: #c5d2de;
+    font-size: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    .panel {
+        max-height: none;
+    }
+}

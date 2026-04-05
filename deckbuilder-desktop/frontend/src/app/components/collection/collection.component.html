@@ -1,0 +1,88 @@
+<main class="layout">
+    <section class="panel">
+        <h2>Card Collection</h2>
+        <p class="subtitle">Track every card you own and how many copies are in your collection.</p>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <span class="stat-label">Total Cards</span>
+                <strong>{{ cards.length }}</strong>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Owned Cards</span>
+                <strong>{{ ownedCardsCount }}</strong>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Owned Copies</span>
+                <strong>{{ totalOwnedCopies }}</strong>
+            </div>
+        </div>
+
+        <div class="filters">
+            <label>
+                Search
+                <input type="text" [(ngModel)]="search" (ngModelChange)="applyFilters()"
+                    placeholder="Name, set, type...">
+            </label>
+
+            <label>
+                Table
+                <select [(ngModel)]="selectedTable" (ngModelChange)="applyFilters()">
+                    <option *ngFor="let table of tables" [value]="table">{{ table }}</option>
+                </select>
+            </label>
+
+            <label class="owned-only-toggle">
+                <input type="checkbox" [(ngModel)]="ownedOnly" (change)="applyFilters()">
+                Owned only
+            </label>
+
+            <button type="button" class="build-btn" (click)="loadCollection()" [disabled]="loading">
+                {{ loading ? 'Refreshing...' : 'Refresh Collection' }}
+            </button>
+        </div>
+
+        <p class="error" *ngIf="loadError">{{ loadError }}</p>
+    </section>
+
+    <section class="panel">
+        <h3>Cards ({{ filteredCards.length }})</h3>
+
+        <div class="loading-note" *ngIf="loading">Loading cards from database...</div>
+
+        <div class="card-grid" *ngIf="!loading">
+            <article class="card-tile" *ngFor="let card of filteredCards; trackBy: trackByCardId">
+                <button type="button" class="card-open" (click)="openCardDialog(card, $event)">
+                    <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(card); else fallbackImage">
+                        <img [src]="tileImageSrc(card)" [alt]="card['Name']" loading="lazy"
+                            (error)="onTileImageError(card)">
+                    </div>
+                    <ng-template #fallbackImage>
+                        <div class="tile-image-fallback">{{ card['Name'] || 'Unknown Card' }}</div>
+                    </ng-template>
+                    <strong>{{ card['Name'] || 'Unknown Card' }}</strong>
+                </button>
+
+                <span class="set-tag" *ngIf="card['Set']">{{ card['Set'] }}</span>
+                <span class="meta" *ngIf="card['Card Type']">{{ card['Card Type'] }}</span>
+                <span class="meta table-tag">{{ card._table }}</span>
+
+                <label class="ownership-row">
+                    <input type="checkbox" [checked]="card.owned"
+                        (change)="onOwnedToggle(card, $any($event.target).checked)">
+                    <span>Owned</span>
+                </label>
+
+                <label class="count-row">
+                    Copies
+                    <input type="number" min="0" [value]="card.owned_count"
+                        (change)="onOwnedCountChange(card, $any($event.target).value)">
+                </label>
+            </article>
+        </div>
+    </section>
+</main>
+
+<app-card-dialog *ngIf="selectedCard" [card]="selectedCardRecord!" [contextLabel]="selectedContext"
+    (close)="closeCardDialog()">
+</app-card-dialog>

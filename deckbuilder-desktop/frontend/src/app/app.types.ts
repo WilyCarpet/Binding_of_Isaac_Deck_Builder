@@ -17,6 +17,15 @@ export interface DeckOption {
 
 export type CardRecord = Record<string, string>;
 
+export interface CollectionCard {
+    [key: string]: string | number | boolean;
+    card_id: string;
+    _table: string;
+    _card_rowid: number;
+    owned: boolean;
+    owned_count: number;
+}
+
 export interface DeckResult {
     loot: Record<string, CardRecord[]>;
     monster: Record<string, CardRecord[]>;

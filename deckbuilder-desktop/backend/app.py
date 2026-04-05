@@ -15,6 +15,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = PROJECT_ROOT.parent / "four-souls-scraper" / \
     "four_souls_all_cards_by_category.db"
 CARD_IMAGE_DIR = PROJECT_ROOT.parent / "four-souls-scraper" / "card_images"
+OWNERSHIP_TABLE = "Card_Ownership"
 
 # ---------------------------------------------------------------------------
 # Deck-building constants
@@ -89,6 +90,59 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+def ensure_collection_table(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        f'''
+        CREATE TABLE IF NOT EXISTS "{OWNERSHIP_TABLE}" (
+            table_name TEXT NOT NULL,
+            card_rowid INTEGER NOT NULL,
+            owned INTEGER NOT NULL DEFAULT 0 CHECK (owned IN (0, 1)),
+            owned_count INTEGER NOT NULL DEFAULT 0 CHECK (owned_count >= 0),
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (table_name, card_rowid)
+        )
+        '''
+    )
+    conn.execute(
+        f'CREATE INDEX IF NOT EXISTS idx_{OWNERSHIP_TABLE}_owned ON "{OWNERSHIP_TABLE}" (owned)'
+    )
+    conn.commit()
+
+
+def list_card_tables(conn: sqlite3.Connection) -> list[str]:
+    rows = conn.execute(
+        """
+        SELECT name
+        FROM sqlite_master
+        WHERE type = 'table'
+          AND name NOT LIKE 'sqlite_%'
+          AND name != ?
+        ORDER BY name
+        """,
+        (OWNERSHIP_TABLE,),
+    ).fetchall()
+    return [r["name"] for r in rows]
+
+
+def parse_card_id(card_id: str) -> tuple[str, int]:
+    if ":" not in card_id:
+        raise ValueError("card_id must be in <table_name>:<rowid> format")
+
+    table_name, rowid_raw = card_id.split(":", 1)
+    if not table_name:
+        raise ValueError("table_name is required in card_id")
+
+    try:
+        card_rowid = int(rowid_raw)
+    except ValueError as exc:
+        raise ValueError("rowid in card_id must be an integer") from exc
+
+    if card_rowid <= 0:
+        raise ValueError("rowid in card_id must be positive")
+
+    return table_name, card_rowid
+
+
 def _placeholders(lst: list[str]) -> str:
     return ",".join("?" for _ in lst)
 
@@ -149,6 +203,120 @@ def card_image(filename: str) -> Any:
         return jsonify({"error": f"Image not found: {safe_filename}"}), 404
 
     return send_from_directory(CARD_IMAGE_DIR, safe_filename)
+
+
+@app.get("/collection/cards")
+def get_collection_cards() -> Any:
+    with get_connection() as conn:
+        ensure_collection_table(conn)
+        tables = list_card_tables(conn)
+
+        cards: list[dict[str, Any]] = []
+        for table_name in tables:
+            rows = conn.execute(
+                f'SELECT rowid as _rowid, * FROM "{table_name}"').fetchall()
+            for row in rows:
+                record = dict(row)
+                rowid = int(record.pop("_rowid"))
+                ownership = conn.execute(
+                    f'''
+                    SELECT owned, owned_count
+                    FROM "{OWNERSHIP_TABLE}"
+                    WHERE table_name = ? AND card_rowid = ?
+                    ''',
+                    (table_name, rowid),
+                ).fetchone()
+
+                owned = bool(ownership["owned"]) if ownership else False
+                owned_count = int(ownership["owned_count"]) if ownership else 0
+
+                cards.append(
+                    {
+                        **record,
+                        "_table": table_name,
+                        "_card_rowid": rowid,
+                        "card_id": f"{table_name}:{rowid}",
+                        "owned": owned,
+                        "owned_count": owned_count,
+                    }
+                )
+
+    cards.sort(key=lambda c: ((c.get("Name") or "").lower(),
+               c.get("_table") or "", c["_card_rowid"]))
+    return jsonify({"cards": cards, "count": len(cards)})
+
+
+@app.put("/collection/cards/<path:card_id>")
+def update_collection_card(card_id: str) -> Any:
+    payload = request.get_json(silent=True) or {}
+    if "owned" not in payload and "owned_count" not in payload:
+        return jsonify({"error": "Provide at least one of: owned, owned_count"}), 400
+
+    try:
+        table_name, card_rowid = parse_card_id(card_id)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    with get_connection() as conn:
+        ensure_collection_table(conn)
+        tables = set(list_card_tables(conn))
+        if table_name not in tables:
+            return jsonify({"error": f"Unknown card table: {table_name}"}), 404
+
+        exists = conn.execute(
+            f'SELECT 1 FROM "{table_name}" WHERE rowid = ? LIMIT 1',
+            (card_rowid,),
+        ).fetchone()
+        if not exists:
+            return jsonify({"error": f"Card not found in {table_name} with rowid {card_rowid}"}), 404
+
+        current = conn.execute(
+            f'''
+            SELECT owned, owned_count
+            FROM "{OWNERSHIP_TABLE}"
+            WHERE table_name = ? AND card_rowid = ?
+            ''',
+            (table_name, card_rowid),
+        ).fetchone()
+
+        current_owned = bool(current["owned"]) if current else False
+        current_count = int(current["owned_count"]) if current else 0
+
+        owned = bool(payload.get("owned", current_owned))
+        try:
+            owned_count = int(payload.get("owned_count", current_count))
+        except (TypeError, ValueError):
+            return jsonify({"error": "owned_count must be an integer"}), 400
+
+        if owned_count < 0:
+            return jsonify({"error": "owned_count must be >= 0"}), 400
+
+        if not owned:
+            owned_count = 0
+        elif owned_count == 0:
+            owned_count = 1
+
+        conn.execute(
+            f'''
+            INSERT INTO "{OWNERSHIP_TABLE}" (table_name, card_rowid, owned, owned_count, updated_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(table_name, card_rowid)
+            DO UPDATE SET
+                owned = excluded.owned,
+                owned_count = excluded.owned_count,
+                updated_at = CURRENT_TIMESTAMP
+            ''',
+            (table_name, card_rowid, int(owned), owned_count),
+        )
+        conn.commit()
+
+    return jsonify(
+        {
+            "card_id": card_id,
+            "owned": owned,
+            "owned_count": owned_count,
+        }
+    )
 
 
 @app.post("/deck/build")

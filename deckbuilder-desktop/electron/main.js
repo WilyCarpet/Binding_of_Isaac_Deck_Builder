@@ -115,6 +115,32 @@ ipcMain.handle('deck:build', async (_event, payload) => {
     return response.json();
 });
 
+ipcMain.handle('collection:getCards', async () => {
+    const response = await fetch(`${FLASK_URL}/collection/cards`);
+
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Failed to load collection cards: ${body}`);
+    }
+
+    return response.json();
+});
+
+ipcMain.handle('collection:updateCard', async (_event, cardId, payload) => {
+    const response = await fetch(`${FLASK_URL}/collection/cards/${encodeURIComponent(cardId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Failed to update collection card: ${body}`);
+    }
+
+    return response.json();
+});
+
 app.whenReady().then(async () => {
     try {
         await ensureBackendRunning();

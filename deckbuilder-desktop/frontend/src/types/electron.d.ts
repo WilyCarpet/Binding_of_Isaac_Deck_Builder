@@ -6,6 +6,8 @@ declare global {
     interface Window {
         electronAPI?: {
             buildDeck: (payload: DeckBuildRequest) => Promise<DeckBuildResponse>;
+            getCollectionCards: () => Promise<CollectionCardsResponse>;
+            updateCollectionCard: (cardId: string, payload: CollectionUpdateRequest) => Promise<CollectionUpdateResponse>;
         };
     }
 }
@@ -45,4 +47,29 @@ interface DeckBuildResponse {
     seed: string | null;
     selected_decks: string[];
     ratio_mode: string;
+}
+
+interface CollectionCard {
+    [key: string]: string | number | boolean;
+    card_id: string;
+    _table: string;
+    _card_rowid: number;
+    owned: boolean;
+    owned_count: number;
+}
+
+interface CollectionCardsResponse {
+    cards: CollectionCard[];
+    count: number;
+}
+
+interface CollectionUpdateRequest {
+    owned?: boolean;
+    owned_count?: number;
+}
+
+interface CollectionUpdateResponse {
+    card_id: string;
+    owned: boolean;
+    owned_count: number;
 }

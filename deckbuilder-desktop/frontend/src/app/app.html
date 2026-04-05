@@ -1,41 +1,16 @@
-<main class="layout">
-  <section class="panel">
-    <app-left-column
-      [ratio]="ratio"
-      [ratioValues]="ratioValues"
-      [labelMap]="LABEL_MAP"
-      [lootKeys]="LOOT_KEYS"
-      [monsterKeys]="MONSTER_KEYS"
-      [treasureKeys]="TREASURE_KEYS"
-      (ratioChange)="onRatioChange($event)">
-    </app-left-column>
-  </section>
+<main class="hub">
+  <header class="hub-header">
+    <h1>Four Souls Companion</h1>
+    <p>Build decks and track your complete card collection.</p>
 
-  <section class="panel">
-    <app-right-column
-      [seed]="seed"
-      [specplayers]="specplayers"
-      [players]="players"
-      [eternalshuffle]="eternalshuffle"
-      [coreDeckState]="coreDeckState"
-      [promoDeckState]="promoDeckState"
-      [otherDeckState]="otherDeckState"
-      [building]="building"
-      [buildError]="buildError"
-      (seedChange)="seed = $event"
-      (specplayersChange)="specplayers = $event"
-      (playersChange)="players = $event"
-      (eternalshuffleChange)="eternalshuffle = $event"
-      (build)="buildDeck()">
-    </app-right-column>
-  </section>
+    <nav class="hub-nav" aria-label="Main navigation">
+      <a routerLink="/deck-builder" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Deck
+        Builder</a>
+      <a routerLink="/collection" routerLinkActive="active">Collection</a>
+    </nav>
+  </header>
 
-  <section class="panel results-panel" *ngIf="deckResult">
-    <app-results-panel
-      [deckResult]="deckResult"
-      [buildWarnings]="buildWarnings"
-      [resultSeed]="resultSeed"
-      [labelMap]="LABEL_MAP">
-    </app-results-panel>
+  <section class="hub-section">
+    <router-outlet></router-outlet>
   </section>
 </main>
