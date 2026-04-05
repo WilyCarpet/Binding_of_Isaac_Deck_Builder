@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -14,6 +14,7 @@ CORS(app)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = PROJECT_ROOT.parent / "four-souls-scraper" / \
     "four_souls_all_cards_by_category.db"
+CARD_IMAGE_DIR = PROJECT_ROOT.parent / "four-souls-scraper" / "card_images"
 
 # ---------------------------------------------------------------------------
 # Deck-building constants
@@ -127,6 +128,27 @@ def _sample_from_table(
 @app.get("/health")
 def health() -> Any:
     return jsonify({"status": "ok", "db_exists": DB_PATH.exists(), "db_path": str(DB_PATH)})
+
+
+@app.get("/")
+def root() -> Any:
+    return jsonify({
+        "service": "deckbuilder-backend",
+        "status": "ok",
+        "health": "/health",
+        "build": "/deck/build",
+    })
+
+
+@app.get("/card-images/<path:filename>")
+def card_image(filename: str) -> Any:
+    safe_filename = Path(filename).name
+    image_path = CARD_IMAGE_DIR / safe_filename
+
+    if not CARD_IMAGE_DIR.exists() or not image_path.exists():
+        return jsonify({"error": f"Image not found: {safe_filename}"}), 404
+
+    return send_from_directory(CARD_IMAGE_DIR, safe_filename)
 
 
 @app.post("/deck/build")

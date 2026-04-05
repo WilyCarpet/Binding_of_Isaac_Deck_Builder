@@ -23,11 +23,31 @@ python3 -m pip install --user -r backend/requirements.txt
 npm run dev
 ```
 
+or
+
+```bash
+npm run dev:electron
+```
+
 This starts:
 
 - Angular on http://127.0.0.1:4200
 - Electron app window
 - Flask backend auto-started by Electron on http://127.0.0.1:5001
+
+If Angular is already running and you only want to attach Electron, use:
+
+```bash
+npm run dev:electron:attach
+```
+
+If you only want to run in the browser (no Electron), use:
+
+```bash
+npm run dev:web
+```
+
+This starts Angular + Flask together so API calls like POST /deck/build do not fail with "Failed to fetch".
 
 The dev command now performs a preflight cleanup of stale listeners on ports 4200 and 5001 before startup.
 

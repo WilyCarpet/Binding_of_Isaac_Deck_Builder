@@ -1,0 +1,46 @@
+<h1>Four Souls Deck Builder</h1>
+
+<h2>Ratios</h2>
+<div class="form-row">
+  <label for="ratios">Deckbuilder Ratio:</label>
+  <select
+    id="ratios"
+    [ngModel]="ratio"
+    (ngModelChange)="ratioChange.emit($event)">
+    <option value="o">Official</option>
+    <option value="d">Draft</option>
+    <option value="c">Custom</option>
+  </select>
+</div>
+
+<div class="ratio-section">
+  <h3>Loot Deck</h3>
+  <div class="form-row" *ngFor="let key of lootKeys">
+    <label>{{ labelMap[key] }}:</label>
+    <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+  </div>
+
+  <h3>Monster Deck</h3>
+  <div class="form-row" *ngFor="let key of monsterKeys">
+    <label>{{ labelMap[key] }}:</label>
+    <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+  </div>
+
+  <h3>Treasure Deck</h3>
+  <div class="form-row" *ngFor="let key of treasureKeys">
+    <label>{{ labelMap[key] }}:</label>
+    <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+  </div>
+
+  <h3>Souls</h3>
+  <div class="form-row">
+    <label>{{ labelMap['sd_s'] }}:</label>
+    <input type="number" min="0" [(ngModel)]="ratioValues['sd_s']" [disabled]="ratio !== 'c'">
+  </div>
+
+  <h3>Rooms</h3>
+  <div class="form-row">
+    <label>{{ labelMap['rd_r'] }}:</label>
+    <input type="number" min="0" [(ngModel)]="ratioValues['rd_r']" [disabled]="ratio !== 'c'">
+  </div>
+</div>

@@ -1,0 +1,51 @@
+h1 {
+    font-size: 1.4rem;
+    margin: 0 0 0.8rem;
+}
+
+h2 {
+    font-size: 1.1rem;
+    margin: 0.8rem 0 0.4rem;
+    border-bottom: 1px solid #3b4a5a;
+    padding-bottom: 0.3rem;
+}
+
+h3 {
+    font-size: 0.95rem;
+    margin: 0.7rem 0 0.3rem;
+    color: #c8d2dc;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+
+    label {
+        flex: 0 0 180px;
+        font-size: 0.85rem;
+        color: #d0dae4;
+    }
+
+    input[type=number],
+    select {
+        flex: 1;
+        max-width: 100px;
+        border-radius: 6px;
+        border: 1px solid #4b5d70;
+        background: #14181d;
+        color: #f5f3ef;
+        font-size: 0.85rem;
+        padding: 0.3rem 0.4rem;
+    }
+
+    input[type=number]:disabled,
+    select:disabled {
+        opacity: 0.45;
+    }
+}
+
+.ratio-section {
+    margin-top: 0.5rem;
+}

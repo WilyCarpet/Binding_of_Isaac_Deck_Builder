@@ -1,11 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { spawn } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const FLASK_URL = 'http://127.0.0.1:5001';
 const FRONTEND_URL = 'http://127.0.0.1:4200';
 const projectRoot = path.resolve(__dirname, '..');
 const backendScript = path.join(projectRoot, 'backend', 'app.py');
+const venvPython = path.resolve(projectRoot, '..', '.venv', 'bin', 'python');
 
 let mainWindow;
 let backendProcess;
@@ -39,7 +41,10 @@ async function waitForBackend(maxAttempts = 40) {
 }
 
 function startBackend() {
-    backendProcess = spawn('python3', [backendScript], {
+    const pythonCommand = fs.existsSync(venvPython) ? venvPython : 'python3';
+    console.log(`[flask] launching backend with: ${pythonCommand}`);
+
+    backendProcess = spawn(pythonCommand, [backendScript], {
         cwd: projectRoot,
         env: process.env,
         stdio: ['ignore', 'pipe', 'pipe']
@@ -86,6 +91,12 @@ function createWindow() {
         }
     });
 
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+        console.error(
+            `[electron] failed to load ${validatedURL} (${errorCode}): ${errorDescription}`
+        );
+    });
+
     mainWindow.loadURL(FRONTEND_URL);
 }
 
@@ -105,8 +116,14 @@ ipcMain.handle('deck:build', async (_event, payload) => {
 });
 
 app.whenReady().then(async () => {
-    await ensureBackendRunning();
-    createWindow();
+    try {
+        await ensureBackendRunning();
+        createWindow();
+    } catch (error) {
+        console.error('[electron] startup failed:', error);
+        app.quit();
+        return;
+    }
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {

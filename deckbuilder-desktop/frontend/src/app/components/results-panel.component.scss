@@ -1,0 +1,132 @@
+h2 {
+    font-size: 1.1rem;
+    margin: 0.8rem 0 0.4rem;
+    border-bottom: 1px solid #3b4a5a;
+    padding-bottom: 0.3rem;
+}
+
+h3 {
+    font-size: 0.95rem;
+    margin: 0.7rem 0 0.3rem;
+    color: #c8d2dc;
+}
+
+h4 {
+    font-size: 0.85rem;
+    margin: 0.5rem 0 0.2rem;
+    color: #9fb8cc;
+}
+
+.warnings {
+    background: rgba(200, 120, 0, 0.15);
+    border: 1px solid #886622;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.85rem;
+
+    ul {
+        margin: 0.3rem 0 0 1rem;
+        padding: 0;
+    }
+}
+
+.seed-note {
+    font-size: 0.8rem;
+    color: #a0b0c0;
+    margin-bottom: 0.8rem;
+
+    code {
+        background: #14181d;
+        padding: 0 4px;
+        border-radius: 4px;
+    }
+}
+
+.result-group {
+    margin-bottom: 1.4rem;
+}
+
+.subsection {
+    margin-bottom: 0.8rem;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.6rem;
+    margin-top: 0.4rem;
+}
+
+.card-tile {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid #3b4855;
+    border-radius: 10px;
+    padding: 0.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+    transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+
+    &:hover {
+        border-color: #5d7286;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    &:focus-visible {
+        outline: 2px solid #87b4d8;
+        outline-offset: 1px;
+    }
+
+    .tile-image-wrapper {
+        border-radius: 7px;
+        overflow: hidden;
+        border: 1px solid #2f3f4d;
+        background: #0f151c;
+        aspect-ratio: 2 / 3;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+    }
+
+    .tile-image-fallback {
+        border-radius: 7px;
+        border: 1px dashed #54687a;
+        background: rgba(22, 30, 39, 0.9);
+        color: #99adbf;
+        aspect-ratio: 2 / 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 0.35rem;
+        line-height: 1.2;
+        font-size: 0.75rem;
+    }
+
+    strong {
+        font-size: 0.79rem;
+        color: #e8dcd0;
+        line-height: 1.25;
+    }
+
+    .set-tag {
+        display: inline-block;
+        background: #1e3040;
+        border-radius: 4px;
+        padding: 0 4px;
+        font-size: 0.7rem;
+        color: #7ab0cc;
+        width: fit-content;
+    }
+
+}

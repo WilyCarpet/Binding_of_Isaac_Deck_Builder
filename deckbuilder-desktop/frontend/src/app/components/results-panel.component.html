@@ -1,0 +1,137 @@
+<h2>Generated Deck &mdash; {{ totalCards() }} cards total</h2>
+
+<div class="warnings" *ngIf="buildWarnings.length > 0">
+  <strong>Warnings:</strong>
+  <ul>
+    <li *ngFor="let w of buildWarnings">{{ w }}</li>
+  </ul>
+</div>
+<p class="seed-note" *ngIf="resultSeed">Seed used: <code>{{ resultSeed }}</code></p>
+
+<div class="result-group" *ngIf="deckResult.characters && deckResult.characters.length > 0">
+  <h3>Characters ({{ deckResult.characters.length }})</h3>
+  <div class="card-grid">
+    <button type="button" class="card-tile" *ngFor="let c of deckResult.characters" (click)="openCardDialog(c, 'Character', $event)">
+      <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else characterFallbackImage">
+        <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+      </div>
+      <ng-template #characterFallbackImage>
+        <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+      </ng-template>
+      <strong>{{ c['Name'] }}</strong>
+      <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+    </button>
+  </div>
+</div>
+
+<div class="result-group">
+  <h3>Loot Deck ({{ countCards(deckResult.loot) }})</h3>
+  <div *ngFor="let entry of sectionEntries(deckResult.loot)" class="subsection">
+    <h4>{{ labelMap[entry[0]] }} ({{ entry[1].length }})</h4>
+    <div class="card-grid">
+      <button type="button" class="card-tile" *ngFor="let c of entry[1]" (click)="openCardDialog(c, labelMap[entry[0]], $event)">
+        <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else lootFallbackImage">
+          <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+        </div>
+        <ng-template #lootFallbackImage>
+          <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+        </ng-template>
+        <strong>{{ c['Name'] }}</strong>
+        <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="result-group">
+  <h3>Monster Deck ({{ countCards(deckResult.monster) }})</h3>
+  <div *ngFor="let entry of sectionEntries(deckResult.monster)" class="subsection">
+    <h4>{{ labelMap[entry[0]] }} ({{ entry[1].length }})</h4>
+    <div class="card-grid">
+      <button type="button" class="card-tile" *ngFor="let c of entry[1]" (click)="openCardDialog(c, labelMap[entry[0]], $event)">
+        <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else monsterFallbackImage">
+          <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+        </div>
+        <ng-template #monsterFallbackImage>
+          <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+        </ng-template>
+        <strong>{{ c['Name'] }}</strong>
+        <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="result-group">
+  <h3>Treasure Deck ({{ countCards(deckResult.treasure) }})</h3>
+  <div *ngFor="let entry of sectionEntries(deckResult.treasure)" class="subsection">
+    <h4>{{ labelMap[entry[0]] }} ({{ entry[1].length }})</h4>
+    <div class="card-grid">
+      <button type="button" class="card-tile" *ngFor="let c of entry[1]" (click)="openCardDialog(c, labelMap[entry[0]], $event)">
+        <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else treasureFallbackImage">
+          <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+        </div>
+        <ng-template #treasureFallbackImage>
+          <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+        </ng-template>
+        <strong>{{ c['Name'] }}</strong>
+        <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="result-group" *ngIf="countCards(deckResult.souls) > 0">
+  <h3>Souls ({{ countCards(deckResult.souls) }})</h3>
+  <div class="card-grid">
+    <button type="button" class="card-tile" *ngFor="let c of deckResult.souls['sd_s']" (click)="openCardDialog(c, 'Bonus Soul', $event)">
+      <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else soulFallbackImage">
+        <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+      </div>
+      <ng-template #soulFallbackImage>
+        <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+      </ng-template>
+      <strong>{{ c['Name'] }}</strong>
+      <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+    </button>
+  </div>
+</div>
+
+<div class="result-group" *ngIf="countCards(deckResult.rooms) > 0">
+  <h3>Rooms ({{ countCards(deckResult.rooms) }})</h3>
+  <div class="card-grid">
+    <button type="button" class="card-tile" *ngFor="let c of deckResult.rooms['rd_r']" (click)="openCardDialog(c, 'Room', $event)">
+      <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else roomFallbackImage">
+        <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+      </div>
+      <ng-template #roomFallbackImage>
+        <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+      </ng-template>
+      <strong>{{ c['Name'] }}</strong>
+      <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+    </button>
+  </div>
+</div>
+
+<div class="result-group" *ngIf="deckResult.eternal && deckResult.eternal.length > 0">
+  <h3>Eternal Treasure ({{ deckResult.eternal.length }})</h3>
+  <div class="card-grid">
+    <button type="button" class="card-tile" *ngFor="let c of deckResult.eternal" (click)="openCardDialog(c, 'Eternal Treasure', $event)">
+      <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else eternalFallbackImage">
+        <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+      </div>
+      <ng-template #eternalFallbackImage>
+        <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+      </ng-template>
+      <strong>{{ c['Name'] }}</strong>
+      <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+    </button>
+  </div>
+</div>
+
+<app-card-dialog
+  *ngIf="selectedCard"
+  [card]="selectedCard"
+  [contextLabel]="selectedContext"
+  (close)="closeCardDialog()">
+</app-card-dialog>

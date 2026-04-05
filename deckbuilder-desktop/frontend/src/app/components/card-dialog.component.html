@@ -1,0 +1,57 @@
+<div class="dialog-backdrop" (click)="onBackdropClick($event)">
+  <section class="dialog-shell" role="dialog" aria-modal="true" (click)="stopClick($event)">
+    <button class="dialog-close" type="button" aria-label="Close card dialog" (click)="closeDialog()">
+      x
+    </button>
+
+    <div class="preview-column">
+      <div class="image-frame">
+        <img *ngIf="hasImage; else noImage" [src]="imageSrc" [alt]="card['Name'] || 'Card image'" (error)="onImageError()" loading="lazy">
+        <ng-template #noImage>
+          <div class="image-fallback">No image available</div>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="info-column">
+      <p class="context-label" *ngIf="contextLabel">{{ contextLabel }}</p>
+      <h2>{{ card['Name'] || 'Unknown Card' }}</h2>
+
+      <div class="meta-row">
+        <span *ngIf="card['Set']" class="set-pill">{{ card['Set'] }}</span>
+        <span *ngIf="card['Sub Box']" class="meta-pill">{{ card['Sub Box'] }}</span>
+        <span *ngIf="card['Card Type']" class="meta-pill">{{ card['Card Type'] }}</span>
+      </div>
+
+      <div class="stat-row" *ngIf="card['HP'] || card['ATK']">
+        <span *ngIf="card['HP']" class="stat-pill">HP {{ card['HP'] }}</span>
+        <span *ngIf="card['ATK']" class="stat-pill">ATK {{ card['ATK'] }}</span>
+      </div>
+
+      <div class="section" *ngIf="card['Effect Type'] || card['Effect']">
+        <h3>Effect</h3>
+        <p class="effect-type" *ngIf="card['Effect Type']">{{ card['Effect Type'] }}</p>
+        <p class="effect-text" *ngIf="card['Effect']">{{ card['Effect'] }}</p>
+      </div>
+
+      <div class="section" *ngIf="card['Quote']">
+        <h3>Quote</h3>
+        <p class="quote">"{{ card['Quote'] }}"</p>
+      </div>
+
+      <div class="section" *ngIf="detailEntries().length > 0">
+        <h3>Details</h3>
+        <dl class="details-list">
+          <ng-container *ngFor="let entry of detailEntries()">
+            <dt>{{ entry[0] }}</dt>
+            <dd>{{ entry[1] }}</dd>
+          </ng-container>
+        </dl>
+      </div>
+
+      <a *ngIf="card['URL']" class="source-link" [href]="card['URL']" target="_blank" rel="noopener noreferrer">
+        View source card page
+      </a>
+    </div>
+  </section>
+</div>

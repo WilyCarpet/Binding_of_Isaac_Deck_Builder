@@ -1,0 +1,102 @@
+h2 {
+    font-size: 1.1rem;
+    margin: 0.8rem 0 0.4rem;
+    border-bottom: 1px solid #3b4a5a;
+    padding-bottom: 0.3rem;
+}
+
+h3 {
+    font-size: 0.95rem;
+    margin: 0.7rem 0 0.3rem;
+    color: #c8d2dc;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #2e3d4d;
+    margin: 0.6rem 0;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+
+    label {
+        flex: 0 0 180px;
+        font-size: 0.85rem;
+        color: #d0dae4;
+    }
+
+    input[type=number],
+    input[type=text] {
+        flex: 1;
+        max-width: 100px;
+        border-radius: 6px;
+        border: 1px solid #4b5d70;
+        background: #14181d;
+        color: #f5f3ef;
+        font-size: 0.85rem;
+        padding: 0.3rem 0.4rem;
+    }
+}
+
+.checkbox-row input[type=checkbox] {
+    width: 16px;
+    height: 16px;
+    flex: none;
+}
+
+.player-rules {
+    margin-left: 0.5rem;
+    border-left: 2px solid #324150;
+    padding-left: 0.7rem;
+}
+
+.deck-list {
+    display: grid;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.deck-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.87rem;
+    cursor: pointer;
+    padding: 0.2rem 0;
+
+    input[type=checkbox] {
+        flex: none;
+    }
+}
+
+.build-btn {
+    display: block;
+    width: 100%;
+    padding: 0.65rem;
+    margin-top: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid #cc7356;
+    background: #9f4a2f;
+    color: #f5f3ef;
+    font-size: 1rem;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+        background: #bf5a3a;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+}
+
+.error {
+    color: #ff9898;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}

@@ -1,0 +1,77 @@
+<h2>Players &amp; Misc</h2>
+<div class="form-row">
+  <label for="seed">Seed:</label>
+  <input
+    type="text"
+    id="seed"
+    maxlength="8"
+    [ngModel]="seed"
+    (ngModelChange)="seedChange.emit($event)"
+    placeholder="optional">
+</div>
+
+<div class="form-row checkbox-row">
+  <label for="specplayers">Specify Players?</label>
+  <input
+    type="checkbox"
+    id="specplayers"
+    [ngModel]="specplayers"
+    (ngModelChange)="specplayersChange.emit($event)">
+</div>
+
+<div class="player-rules" *ngIf="specplayers">
+  <div class="form-row">
+    <label for="players">Players:</label>
+    <input
+      type="number"
+      id="players"
+      [ngModel]="players"
+      (ngModelChange)="playersChange.emit($event)"
+      min="2"
+      max="12">
+  </div>
+  <div class="form-row checkbox-row">
+    <label for="eternalshuffle">Eternal Shuffle?</label>
+    <input
+      type="checkbox"
+      id="eternalshuffle"
+      [ngModel]="eternalshuffle"
+      (ngModelChange)="eternalshuffleChange.emit($event)">
+  </div>
+</div>
+
+<hr>
+<h2>Decks</h2>
+
+<h3>Core Decks</h3>
+<hr>
+<div class="deck-list">
+  <label class="deck-item" *ngFor="let d of coreDeckState">
+    <input type="checkbox" [(ngModel)]="d.checked">
+    <span>{{ d.label }}</span>
+  </label>
+</div>
+
+<h3>Promotional Decks</h3>
+<hr>
+<div class="deck-list">
+  <label class="deck-item" *ngFor="let d of promoDeckState">
+    <input type="checkbox" [(ngModel)]="d.checked">
+    <span>{{ d.label }}</span>
+  </label>
+</div>
+
+<h3>Other / New Releases</h3>
+<hr>
+<div class="deck-list">
+  <label class="deck-item" *ngFor="let d of otherDeckState">
+    <input type="checkbox" [(ngModel)]="d.checked">
+    <span>{{ d.label }}</span>
+  </label>
+</div>
+
+<hr>
+<button class="build-btn" (click)="build.emit()" [disabled]="building">
+  {{ building ? 'Building...' : 'Build Deck' }}
+</button>
+<p class="error" *ngIf="buildError">{{ buildError }}</p>
