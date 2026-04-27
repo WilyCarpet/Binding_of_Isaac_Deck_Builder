@@ -17,12 +17,15 @@ export class CollectionComponent implements OnInit {
     filteredCards: CollectionCard[] = [];
 
     loading = false;
+    bulkUpdating = false;
     loadError = '';
 
     search = '';
     ownedOnly = false;
     selectedTable = 'all';
+    selectedSet = 'all';
     tables: string[] = [];
+    sets: string[] = [];
 
     selectedCard: CollectionCard | null = null;
     selectedContext = 'Collection';
@@ -39,6 +42,10 @@ export class CollectionComponent implements OnInit {
 
     get totalOwnedCopies(): number {
         return this.cards.reduce((sum, c) => sum + c.owned_count, 0);
+    }
+
+    get areAllVisibleCardsOwned(): boolean {
+        return this.filteredCards.length > 0 && this.filteredCards.every(card => card.owned);
     }
 
     async loadCollection(): Promise<void> {
@@ -58,6 +65,7 @@ export class CollectionComponent implements OnInit {
 
             this.cards = response.cards ?? [];
             this.tables = ['all', ...new Set(this.cards.map(c => c._table))];
+            this.sets = ['all', ...new Set(this.cards.map(c => this.getSetLabel(c)))];
             this.applyFilters();
         } catch (err) {
             this.loadError = err instanceof Error ? err.message : String(err);
@@ -78,6 +86,10 @@ export class CollectionComponent implements OnInit {
                 return false;
             }
 
+            if (this.selectedSet !== 'all' && this.getSetLabel(card) !== this.selectedSet) {
+                return false;
+            }
+
             if (!q) {
                 return true;
             }
@@ -94,6 +106,16 @@ export class CollectionComponent implements OnInit {
         });
     }
 
+    getSetLabel(card: CollectionCard): string {
+        const setName = String(card['Set'] ?? '').trim();
+        if (setName) {
+            return setName;
+        }
+
+        const setCode = String(card['Set Code'] ?? '').trim();
+        return setCode || 'Unknown Set';
+    }
+
     async onOwnedToggle(card: CollectionCard, nextOwned: boolean): Promise<void> {
         const nextCount = nextOwned ? Math.max(1, card.owned_count) : 0;
         await this.persistCard(card, nextOwned, nextCount);
@@ -104,6 +126,28 @@ export class CollectionComponent implements OnInit {
         const nextCount = Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
         const nextOwned = nextCount > 0;
         await this.persistCard(card, nextOwned, nextCount);
+    }
+
+    async onVisibleOwnedCheckboxChange(nextChecked: boolean): Promise<void> {
+        if (!nextChecked || this.filteredCards.length === 0 || this.bulkUpdating) {
+            return;
+        }
+
+        this.bulkUpdating = true;
+        this.loadError = '';
+
+        try {
+            for (const card of this.filteredCards) {
+                const targetCount = Math.max(1, card.owned_count);
+                if (card.owned && card.owned_count >= targetCount) {
+                    continue;
+                }
+                await this.persistCard(card, true, targetCount, true);
+            }
+        } finally {
+            this.bulkUpdating = false;
+            this.applyFilters();
+        }
     }
 
     openCardDialog(card: CollectionCard, event?: Event): void {
@@ -140,7 +184,7 @@ export class CollectionComponent implements OnInit {
         return this.tileImageIndexes.get(card.card_id) ?? 0;
     }
 
-    private async persistCard(card: CollectionCard, nextOwned: boolean, nextCount: number): Promise<void> {
+    private async persistCard(card: CollectionCard, nextOwned: boolean, nextCount: number, skipApplyFilters = false): Promise<void> {
         const previousOwned = card.owned;
         const previousCount = card.owned_count;
 
@@ -173,6 +217,8 @@ export class CollectionComponent implements OnInit {
             this.loadError = err instanceof Error ? err.message : String(err);
         }
 
-        this.applyFilters();
+        if (!skipApplyFilters) {
+            this.applyFilters();
+        }
     }
 }

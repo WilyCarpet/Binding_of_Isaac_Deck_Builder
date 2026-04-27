@@ -26,9 +26,16 @@
             </label>
 
             <label>
-                Table
+                Category
                 <select [(ngModel)]="selectedTable" (ngModelChange)="applyFilters()">
                     <option *ngFor="let table of tables" [value]="table">{{ table }}</option>
+                </select>
+            </label>
+
+            <label>
+                Expansion / Set
+                <select [(ngModel)]="selectedSet" (ngModelChange)="applyFilters()">
+                    <option *ngFor="let set of sets" [value]="set">{{ set }}</option>
                 </select>
             </label>
 
@@ -46,9 +53,18 @@
     </section>
 
     <section class="panel">
-        <h3>Cards ({{ filteredCards.length }})</h3>
+        <div class="cards-header-row">
+            <h3>Cards ({{ filteredCards.length }})</h3>
+            <label class="bulk-own-toggle">
+                <input type="checkbox" [checked]="areAllVisibleCardsOwned"
+                    (change)="onVisibleOwnedCheckboxChange($any($event.target).checked)"
+                    [disabled]="loading || bulkUpdating || filteredCards.length === 0">
+                Mark visible cards as owned
+            </label>
+        </div>
 
         <div class="loading-note" *ngIf="loading">Loading cards from database...</div>
+        <div class="loading-note" *ngIf="bulkUpdating">Saving visible cards as owned...</div>
 
         <div class="card-grid" *ngIf="!loading">
             <article class="card-tile" *ngFor="let card of filteredCards; trackBy: trackByCardId">

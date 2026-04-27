@@ -118,6 +118,26 @@
     font-size: 0.9rem;
 }
 
+.cards-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+
+    h3 {
+        margin: 0;
+    }
+}
+
+.bulk-own-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #d0dae4;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
