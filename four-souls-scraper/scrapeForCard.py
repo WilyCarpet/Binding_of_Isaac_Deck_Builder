@@ -373,8 +373,21 @@ def main() -> None:
         default="excel",
         help="Choose output format: excel or sqlite.",
     )
+    parser.add_argument(
+        "--output-path",
+        default=None,
+        help="Directory where output files are written. Defaults to the current working directory.",
+    )
     args = parser.parse_args()
     download_images = not args.no_images
+
+    global OUTPUT_DB, OUTPUT_XLSX, IMAGE_DIR
+    if args.output_path:
+        output_dir = os.path.abspath(args.output_path)
+        os.makedirs(output_dir, exist_ok=True)
+        OUTPUT_DB = os.path.join(output_dir, "four_souls_all_cards_by_category.db")
+        OUTPUT_XLSX = os.path.join(output_dir, "four_souls_all_cards_by_category.xlsx")
+        IMAGE_DIR = os.path.join(output_dir, "card_images")
 
     print("Starting Four Souls full card scrape...")
     if not download_images:

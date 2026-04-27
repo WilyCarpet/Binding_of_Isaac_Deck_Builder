@@ -161,7 +161,17 @@ export class CollectionComponent implements OnInit {
     }
 
     get selectedCardRecord(): CardRecord | null {
-        return this.selectedCard as unknown as CardRecord | null;
+        if (!this.selectedCard) {
+            return null;
+        }
+        const collectionKeys = new Set(['owned', 'owned_count', 'card_id', '_table', '_card_rowid']);
+        const record: CardRecord = {};
+        for (const [key, value] of Object.entries(this.selectedCard)) {
+            if (!collectionKeys.has(key)) {
+                record[key] = String(value ?? '');
+            }
+        }
+        return record;
     }
 
     shouldShowTileImage(card: CollectionCard): boolean {

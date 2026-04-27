@@ -1,0 +1,47 @@
+<div class="setup-wrapper">
+  <div class="setup-card">
+    <div class="setup-icon">🎴</div>
+    <h1 class="setup-title">Welcome to Four Souls Companion</h1>
+
+    @if (status === 'idle') {
+      <p class="setup-description">
+        No card database was found. The app needs to download card data from
+        <strong>foursouls.com</strong> before you can build decks or manage your collection.
+      </p>
+
+      <div class="setup-option">
+        <label class="checkbox-label">
+          <input type="checkbox" [checked]="noImages" (change)="noImages = !noImages" />
+          <span>Skip image downloads (faster — images load from foursouls.com on demand)</span>
+        </label>
+      </div>
+
+      <button class="btn-primary" (click)="startSetup()">Set Up Now</button>
+    }
+
+    @if (status === 'running') {
+      <p class="setup-description">Downloading card data — this may take a few minutes…</p>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill"></div>
+      </div>
+      <div class="log-box">
+        @for (msg of messages; track $index) {
+          <p class="log-line">{{ msg }}</p>
+        }
+      </div>
+    }
+
+    @if (status === 'done') {
+      <p class="setup-description setup-success">
+        ✅ Setup complete! Launching the app…
+      </p>
+    }
+
+    @if (status === 'error') {
+      <p class="setup-description setup-error">
+        ❌ Setup failed: {{ errorMessage }}
+      </p>
+      <button class="btn-primary" (click)="retry()">Try Again</button>
+    }
+  </div>
+</div>

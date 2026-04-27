@@ -126,6 +126,17 @@ ipcMain.handle('collection:getCards', async () => {
     return response.json();
 });
 
+ipcMain.handle('setup:checkDb', async () => {
+    try {
+        const response = await fetch(`${FLASK_URL}/health`);
+        if (!response.ok) return false;
+        const body = await response.json();
+        return Boolean(body.db_exists);
+    } catch (_err) {
+        return false;
+    }
+});
+
 ipcMain.handle('collection:updateCard', async (_event, cardId, payload) => {
     const response = await fetch(`${FLASK_URL}/collection/cards/${encodeURIComponent(cardId)}`, {
         method: 'PUT',

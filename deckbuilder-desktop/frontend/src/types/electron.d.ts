@@ -8,6 +8,7 @@ declare global {
             buildDeck: (payload: DeckBuildRequest) => Promise<DeckBuildResponse>;
             getCollectionCards: () => Promise<CollectionCardsResponse>;
             updateCollectionCard: (cardId: string, payload: CollectionUpdateRequest) => Promise<CollectionUpdateResponse>;
+            checkDbExists: () => Promise<boolean>;
         };
     }
 }

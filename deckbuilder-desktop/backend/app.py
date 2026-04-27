@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 import random
 import sqlite3
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory, stream_with_context
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -389,6 +392,71 @@ def build_deck() -> Any:
         "selected_decks": selected_decks,
         "ratio_mode": ratio_mode,
     })
+
+
+# ---------------------------------------------------------------------------
+# First-run setup
+# ---------------------------------------------------------------------------
+
+# Track a running scraper process so we don't start two at once.
+_scraper_process: subprocess.Popen | None = None  # type: ignore[type-arg]
+
+
+@app.get("/setup/scrape")
+def setup_scrape() -> Any:
+    global _scraper_process  # noqa: PLW0603
+
+    if _scraper_process is not None and _scraper_process.poll() is None:
+        return jsonify({"error": "Scraper is already running."}), 409
+
+    no_images = request.args.get("no_images", "false").lower() == "true"
+    scraper_script = PROJECT_ROOT.parent / "four-souls-scraper" / "scrapeForCard.py"
+    output_path = str(DB_PATH.parent)
+
+    cmd = [
+        sys.executable,
+        str(scraper_script),
+        "--output-format", "sqlite",
+        "--output-path", output_path,
+    ]
+    if no_images:
+        cmd.append("--no-images")
+
+    def generate():
+        global _scraper_process  # noqa: PLW0603
+        try:
+            _scraper_process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                cwd=str(PROJECT_ROOT.parent / "four-souls-scraper"),
+                bufsize=1,
+            )
+            assert _scraper_process.stdout is not None
+            for line in _scraper_process.stdout:
+                line = line.rstrip("\n")
+                yield f"data: {json.dumps({'message': line})}\n\n"
+
+            _scraper_process.wait()
+            if _scraper_process.returncode == 0:
+                yield f"event: done\ndata: {json.dumps({'success': True})}\n\n"
+            else:
+                yield (
+                    f"event: scrape-error\n"
+                    f"data: {json.dumps({'error': f'Scraper exited with code {_scraper_process.returncode}'})}\n\n"
+                )
+        except Exception as exc:  # noqa: BLE001
+            yield f"event: scrape-error\ndata: {json.dumps({'error': str(exc)})}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 if __name__ == "__main__":

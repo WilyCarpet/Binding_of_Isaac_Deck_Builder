@@ -1,0 +1,127 @@
+.setup-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background: var(--bg, #1a1a2e);
+}
+
+.setup-card {
+  background: var(--surface, #16213e);
+  border: 1px solid var(--border, #0f3460);
+  border-radius: 12px;
+  padding: 3rem 2.5rem;
+  max-width: 540px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.setup-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.setup-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem;
+  color: var(--text-primary, #e0e0e0);
+}
+
+.setup-description {
+  color: var(--text-secondary, #a0a0b0);
+  line-height: 1.6;
+  margin: 0 0 1.5rem;
+
+  &.setup-success {
+    color: #4caf50;
+    font-size: 1.1rem;
+  }
+
+  &.setup-error {
+    color: #f44336;
+    font-size: 1rem;
+  }
+}
+
+.setup-option {
+  margin-bottom: 1.75rem;
+  text-align: left;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 0.9rem;
+  line-height: 1.5;
+
+  input[type='checkbox'] {
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+    accent-color: var(--accent, #e94560);
+  }
+}
+
+.btn-primary {
+  background: var(--accent, #e94560);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+
+  &:hover {
+    filter: brightness(1.15);
+  }
+
+  &:active {
+    filter: brightness(0.9);
+  }
+}
+
+.progress-bar-track {
+  background: var(--border, #0f3460);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 40%;
+  background: var(--accent, #e94560);
+  border-radius: 4px;
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+.log-box {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border, #0f3460);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  max-height: 220px;
+  overflow-y: auto;
+  text-align: left;
+  font-family: monospace;
+  font-size: 0.78rem;
+}
+
+.log-line {
+  color: var(--text-secondary, #a0a0b0);
+  margin: 0.15rem 0;
+  word-break: break-word;
+}

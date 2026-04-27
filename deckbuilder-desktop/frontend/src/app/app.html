@@ -1,14 +1,16 @@
 <main class="hub">
-  <header class="hub-header">
-    <h1>Four Souls Companion</h1>
-    <p>Build decks and track your complete card collection.</p>
+  @if (router.url !== '/setup') {
+    <header class="hub-header">
+      <h1>Four Souls Companion</h1>
+      <p>Build decks and track your complete card collection.</p>
 
-    <nav class="hub-nav" aria-label="Main navigation">
-      <a routerLink="/deck-builder" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Deck
-        Builder</a>
-      <a routerLink="/collection" routerLinkActive="active">Collection</a>
-    </nav>
-  </header>
+      <nav class="hub-nav" aria-label="Main navigation">
+        <a routerLink="/deck-builder" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Deck
+          Builder</a>
+        <a routerLink="/collection" routerLinkActive="active">Collection</a>
+      </nav>
+    </header>
+  }
 
   <section class="hub-section">
     <router-outlet></router-outlet>
