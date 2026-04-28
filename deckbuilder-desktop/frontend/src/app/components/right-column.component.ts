@@ -20,10 +20,12 @@ export class RightColumnComponent {
     @Input({ required: true }) otherDeckState!: DeckOption[];
     @Input({ required: true }) building!: boolean;
     @Input({ required: true }) buildError!: string;
+    @Input({ required: true }) ownedOnly!: boolean;
 
     @Output() seedChange = new EventEmitter<string>();
     @Output() specplayersChange = new EventEmitter<boolean>();
     @Output() playersChange = new EventEmitter<number>();
     @Output() eternalshuffleChange = new EventEmitter<boolean>();
+    @Output() ownedOnlyChange = new EventEmitter<boolean>();
     @Output() build = new EventEmitter<void>();
 }

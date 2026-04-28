@@ -84,7 +84,12 @@ export class CardDialogComponent implements OnChanges {
         ]);
 
         return Object.entries(this.card)
-            .filter(([key, value]) => !hiddenKeys.has(key) && (value ?? '').trim().length > 0)
+            .filter(([key, value]) =>
+                !key.startsWith('_') &&
+                !hiddenKeys.has(key) &&
+                String(value ?? '').trim().length > 0
+            )
+            .map(([key, value]): [string, string] => [key, String(value)])
             .sort((a, b) => a[0].localeCompare(b[0]));
     }
 }

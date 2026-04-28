@@ -38,6 +38,16 @@
       [ngModel]="eternalshuffle"
       (ngModelChange)="eternalshuffleChange.emit($event)">
   </div>
+  <p class="rule-note" *ngIf="eternalshuffle">
+    {{ players }} Eternal Treasure card(s) will be shuffled in (1 per player).
+  </p>
+  <p class="rule-note">
+    Starting loot: each player draws 3 cards at setup — {{ players * 3 }} extra Wildcards
+    added to the Loot deck automatically (Official/Draft modes only).
+  </p>
+  <p class="rule-note">
+    Bonus Souls: {{ players + 1 }} (players + 1, Official/Draft modes only).
+  </p>
 </div>
 
 <hr>
@@ -74,4 +84,14 @@
 <button class="build-btn" (click)="build.emit()" [disabled]="building">
   {{ building ? 'Building...' : 'Build Deck' }}
 </button>
+
+<div class="form-row checkbox-row owned-only-row">
+  <label for="ownedOnly">Use owned cards only</label>
+  <input
+    type="checkbox"
+    id="ownedOnly"
+    [ngModel]="ownedOnly"
+    (ngModelChange)="ownedOnlyChange.emit($event)">
+</div>
+
 <p class="error" *ngIf="buildError">{{ buildError }}</p>

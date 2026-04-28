@@ -39,6 +39,38 @@ export class ResultsPanelComponent {
         );
     }
 
+    allCards(): CardRecord[] {
+        const cards: CardRecord[] = [];
+        for (const section of [
+            this.deckResult.loot,
+            this.deckResult.monster,
+            this.deckResult.treasure,
+            this.deckResult.souls,
+            this.deckResult.rooms,
+        ]) {
+            for (const arr of Object.values(section)) {
+                cards.push(...arr);
+            }
+        }
+        if (this.deckResult.characters) cards.push(...this.deckResult.characters);
+        if (this.deckResult.eternal) cards.push(...this.deckResult.eternal);
+        return cards;
+    }
+
+    hasOwnershipData(): boolean {
+        const all = this.allCards();
+        return all.length > 0 && '_owned' in all[0];
+    }
+
+    isOwned(card: CardRecord): boolean {
+        return card['_owned'] === true;
+    }
+
+    shoppingList(): CardRecord[] {
+        if (!this.hasOwnershipData()) return [];
+        return this.allCards().filter(c => !this.isOwned(c));
+    }
+
     openCardDialog(card: CardRecord, contextLabel: string, event?: Event): void {
         event?.preventDefault();
         event?.stopPropagation();
@@ -67,7 +99,11 @@ export class ResultsPanelComponent {
     }
 
     tileFallbackTitle(card: CardRecord): string {
-        return card['Name'] || 'Unknown Card';
+        return String(card['Name'] || 'Unknown Card');
+    }
+
+    tableDisplayName(card: CardRecord): string {
+        return String(card['_table'] ?? '').replace(/_/g, ' ');
     }
 
     private getTileImageCandidates(card: CardRecord): string[] {

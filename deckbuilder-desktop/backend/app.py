@@ -5,6 +5,7 @@ import random
 import sqlite3
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +30,7 @@ OFFICIAL_RATIOS: dict[str, int] = {
     "ld_dsh": 5, "ld_ls": 1, "ld_5c": 6, "ld_4c": 12, "ld_3c": 11, "ld_2c": 6, "ld_1c": 2,
     "md_eb": 1, "md_bo": 30, "md_b": 30, "md_ce": 9, "md_hce": 9, "md_ge": 8, "md_be": 8, "md_c": 5,
     "td_a": 40, "td_pas": 44, "td_pai": 10, "td_ou": 5, "td_s": 1,
-    "sd_s": 3, "rd_r": 0,
+    "sd_s": 3, "rd_r": 9,  # 3×3 room grid (Requiem mechanic)
 }
 
 DRAFT_RATIOS: dict[str, int] = {
@@ -37,7 +38,7 @@ DRAFT_RATIOS: dict[str, int] = {
     "ld_dsh": 5, "ld_ls": 1, "ld_5c": 5, "ld_4c": 10, "ld_3c": 10, "ld_2c": 5, "ld_1c": 2,
     "md_eb": 1, "md_bo": 30, "md_b": 30, "md_ce": 9, "md_hce": 9, "md_ge": 8, "md_be": 8, "md_c": 5,
     "td_a": 40, "td_pas": 44, "td_pai": 10, "td_ou": 5, "td_s": 1,
-    "sd_s": 3, "rd_r": 0,
+    "sd_s": 3, "rd_r": 9,  # 3×3 room grid (Requiem mechanic)
 }
 
 RATIO_TO_TABLE: dict[str, str] = {
@@ -112,6 +113,14 @@ def ensure_collection_table(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def ensure_character_starting_items_column(conn: sqlite3.Connection) -> None:
+    """Add 'Starting Items' column to Character_Card if it doesn't exist yet."""
+    existing = {row[1] for row in conn.execute('PRAGMA table_info("Character_Card")')}
+    if "Starting Items" not in existing:
+        conn.execute('ALTER TABLE "Character_Card" ADD COLUMN "Starting Items" TEXT DEFAULT ""')
+        conn.commit()
+
+
 def list_card_tables(conn: sqlite3.Connection) -> list[str]:
     rows = conn.execute(
         """
@@ -150,6 +159,31 @@ def _placeholders(lst: list[str]) -> str:
     return ",".join("?" for _ in lst)
 
 
+def _annotate_ownership(
+    conn: sqlite3.Connection,
+    table: str,
+    cards: list[dict[str, Any]],
+) -> None:
+    """Mutate cards in-place: add _owned (bool), _table (str) to each card."""
+    for card in cards:
+        card["_table"] = table
+        card["_owned"] = False
+    if not cards:
+        return
+    rowids = [int(c["_card_rowid"]) for c in cards if "_card_rowid" in c]
+    if not rowids:
+        return
+    rph = _placeholders(rowids)
+    own_rows = conn.execute(
+        f'SELECT card_rowid FROM "{OWNERSHIP_TABLE}" '
+        f'WHERE table_name = ? AND card_rowid IN ({rph}) AND owned = 1',
+        [table, *rowids],
+    ).fetchall()
+    owned_rowids = {r["card_rowid"] for r in own_rows}
+    for card in cards:
+        card["_owned"] = int(card.get("_card_rowid", -1)) in owned_rowids
+
+
 def _sample_from_table(
     conn: sqlite3.Connection,
     table: str,
@@ -157,16 +191,26 @@ def _sample_from_table(
     count: int,
     warnings: list[str],
     label: str,
+    exclude_names: set[str] | None = None,
+    owned_only: bool = False,
 ) -> list[dict[str, Any]]:
     if count == 0:
         return []
     ph = _placeholders(set_codes)
     rows = conn.execute(
-        f'SELECT * FROM "{table}" WHERE "Set Code" IN ({ph})', set_codes
+        f'SELECT rowid as _card_rowid, * FROM "{table}" WHERE "Set Code" IN ({ph})', set_codes
     ).fetchall()
     pool = [dict(r) for r in rows]
+    _annotate_ownership(conn, table, pool)
+    if owned_only:
+        pool = [c for c in pool if c["_owned"]]
+    if exclude_names:
+        pool = [c for c in pool if (c.get("Name") or "") not in exclude_names]
     if not pool:
-        warnings.append(f"No cards available for {label} in selected decks.")
+        if owned_only:
+            warnings.append(f"No owned cards available for {label} in selected decks.")
+        else:
+            warnings.append(f"No cards available for {label} in selected decks.")
         return []
     if len(pool) < count:
         warnings.append(
@@ -334,7 +378,15 @@ def build_deck() -> Any:
     seed_val: str = str(payload.get("seed", "")).strip()
     specplayers: bool = bool(payload.get("specplayers", False))
     players: int = max(2, min(12, int(payload.get("players", 4))))
-    eternalshuffle: bool = bool(payload.get("eternalshuffle", False))
+    owned_only: bool = bool(payload.get("owned_only", False))
+
+    # eternal_count: new integer field; fall back to legacy eternalshuffle boolean
+    if "eternal_count" in payload:
+        eternal_count: int = max(0, int(payload.get("eternal_count", 0)))
+    elif bool(payload.get("eternalshuffle", False)):
+        eternal_count = players if specplayers else 1
+    else:
+        eternal_count = 0
 
     # Determine base ratios
     if ratio_mode == "d":
@@ -347,6 +399,12 @@ def build_deck() -> Any:
     else:
         ratios = dict(OFFICIAL_RATIOS)
 
+    # When specplayers is on, scale loot deck (3 starting loot per player) and
+    # bonus souls (players + 1) for official/draft modes only.
+    if specplayers and ratio_mode in ("o", "d"):
+        ratios["ld_wc"] = ratios["ld_wc"] + players * 3
+        ratios["sd_s"] = players + 1
+
     # Seed RNG
     random.seed(seed_val if seed_val else None)
 
@@ -354,36 +412,72 @@ def build_deck() -> Any:
     result: dict[str, Any] = {}
 
     with get_connection() as conn:
-        for group, keys in DECK_GROUPS.items():
-            result[group] = {}
-            for key in keys:
-                table = RATIO_TO_TABLE[key]
-                result[group][key] = _sample_from_table(
-                    conn, table, selected_decks, ratios[key], warnings, key
-                )
+        ensure_collection_table(conn)
+        ensure_character_starting_items_column(conn)
 
+        # ----- Characters (must come before Treasure sampling) -----
+        starting_item_names: set[str] = set()
         if specplayers:
             ph = _placeholders(selected_decks)
             char_rows = conn.execute(
-                f'SELECT * FROM "Character_Card" WHERE "Set Code" IN ({ph})',
+                f'SELECT rowid as _card_rowid, * FROM "Character_Card" WHERE "Set Code" IN ({ph})',
                 selected_decks,
             ).fetchall()
             char_pool = [dict(r) for r in char_rows]
+            _annotate_ownership(conn, "Character_Card", char_pool)
             if len(char_pool) < players:
                 warnings.append(
-                    f"Only {len(char_pool)} characters available for {players} players."
+                    f"Only {len(char_pool)} characters available for {players} players; "
+                    "try adding more sets."
                 )
                 result["characters"] = char_pool
             else:
                 result["characters"] = random.sample(char_pool, players)
 
-        if eternalshuffle:
+            # Collect starting items of the drawn characters so they can be
+            # excluded from the Treasure pool before sampling.
+            for char in result["characters"]:
+                item = (char.get("Starting Items") or "").strip()
+                if item:
+                    starting_item_names.add(item)
+
+            if starting_item_names:
+                warnings.append(
+                    f"Starting items removed from Treasure pool: "
+                    + ", ".join(sorted(starting_item_names))
+                )
+
+        # ----- Main deck groups -----
+        treasure_keys = set(DECK_GROUPS["treasure"])
+        for group, keys in DECK_GROUPS.items():
+            result[group] = {}
+            for key in keys:
+                table = RATIO_TO_TABLE[key]
+                # Exclude character starting items from all Treasure sub-decks
+                exclude = starting_item_names if key in treasure_keys else None
+                result[group][key] = _sample_from_table(
+                    conn, table, selected_decks, ratios[key], warnings, key, exclude,
+                    owned_only=owned_only,
+                )
+
+        if eternal_count > 0:
             ph = _placeholders(selected_decks)
             et_rows = conn.execute(
-                f'SELECT * FROM "Eternal_Treasure_Card" WHERE "Set Code" IN ({ph})',
+                f'SELECT rowid as _card_rowid, * FROM "Eternal_Treasure_Card" WHERE "Set Code" IN ({ph})',
                 selected_decks,
             ).fetchall()
-            result["eternal"] = [dict(r) for r in et_rows]
+            et_pool = [dict(r) for r in et_rows]
+            _annotate_ownership(conn, "Eternal_Treasure_Card", et_pool)
+            if not et_pool:
+                warnings.append("No Eternal Treasure cards available in the selected sets.")
+            elif len(et_pool) < eternal_count:
+                warnings.append(
+                    f"Only {len(et_pool)} Eternal Treasure cards available "
+                    f"(requested {eternal_count}); using all."
+                )
+                result["eternal"] = et_pool
+            else:
+                result["eternal"] = random.sample(et_pool, eternal_count)
 
     return jsonify({
         "deck": result,
@@ -446,6 +540,125 @@ def setup_scrape() -> Any:
                     f"event: scrape-error\n"
                     f"data: {json.dumps({'error': f'Scraper exited with code {_scraper_process.returncode}'})}\n\n"
                 )
+        except Exception as exc:  # noqa: BLE001
+            yield f"event: scrape-error\ndata: {json.dumps({'error': str(exc)})}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.get("/setup/populate-starting-items")
+def populate_starting_items() -> Any:
+    """Stream SSE progress while backfilling 'Starting Items' for all Character_Card rows.
+
+    Fetches each character's card page on foursouls.com, parses the Eternal Card
+    section, and stores the card name in the 'Starting Items' column.
+    Only rows whose 'Starting Items' field is empty (or the column is missing) are
+    processed; pass ?force=true to re-fetch all rows.
+    """
+    import urllib.request
+
+    force = request.args.get("force", "false").lower() == "true"
+
+    def generate():  # type: ignore[return]
+        try:
+            with get_connection() as conn:
+                ensure_character_starting_items_column(conn)
+                if force:
+                    chars = conn.execute(
+                        'SELECT rowid, Name, URL FROM "Character_Card" WHERE URL != ""'
+                    ).fetchall()
+                else:
+                    chars = conn.execute(
+                        'SELECT rowid, Name, URL FROM "Character_Card" '
+                        'WHERE URL != "" AND ("Starting Items" IS NULL OR "Starting Items" = "")'
+                    ).fetchall()
+
+            total = len(chars)
+            yield f"data: {json.dumps({'message': f'Processing {total} character card(s)...'})}\n\n"
+
+            updated = 0
+            for idx, row in enumerate(chars, 1):
+                rowid, name, url = row["rowid"], row["Name"], row["URL"]
+                starting_item = ""
+                try:
+                    req = urllib.request.Request(
+                        url,
+                        headers={"User-Agent": "Mozilla/5.0"},
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310
+                        from html.parser import HTMLParser
+
+                        class _EternalParser(HTMLParser):
+                            def __init__(self) -> None:
+                                super().__init__()
+                                self._in_eternal_h3 = False
+                                self._eternal_done = False
+                                self.eternal_name = ""
+                                self._capture_next_link = False
+                                self._link_depth = 0
+
+                            def handle_starttag(self, tag: str, attrs: list) -> None:
+                                if self._eternal_done:
+                                    return
+                                if tag == "h3":
+                                    self._pending_h3 = True
+                                if self._capture_next_link and tag == "a":
+                                    self._link_depth += 1
+
+                            def handle_endtag(self, tag: str) -> None:
+                                if self._eternal_done:
+                                    return
+                                if self._capture_next_link and tag == "a":
+                                    self._link_depth -= 1
+
+                            def handle_data(self, data: str) -> None:
+                                if self._eternal_done:
+                                    return
+                                text = data.strip()
+                                if not text:
+                                    return
+                                if getattr(self, "_pending_h3", False):
+                                    self._pending_h3 = False
+                                    if "eternal" in text.lower():
+                                        self._in_eternal_h3 = True
+                                        self._capture_next_link = True
+                                    else:
+                                        self._in_eternal_h3 = False
+                                        self._capture_next_link = False
+                                elif self._capture_next_link and self._link_depth > 0:
+                                    self.eternal_name = text
+                                    self._eternal_done = True
+
+                        html_text = resp.read().decode("utf-8", errors="replace")
+                        parser = _EternalParser()
+                        parser.feed(html_text)
+                        starting_item = parser.eternal_name.strip()
+                except Exception as fetch_err:  # noqa: BLE001
+                    yield f"data: {json.dumps({'message': f'[{idx}/{total}] WARN {name}: {fetch_err}'})}\n\n"
+                    continue
+
+                with get_connection() as conn:
+                    conn.execute(
+                        'UPDATE "Character_Card" SET "Starting Items" = ? WHERE rowid = ?',
+                        (starting_item, rowid),
+                    )
+                    conn.commit()
+
+                item_label = starting_item if starting_item else "(none)"
+                updated += 1
+                yield (
+                    f"data: {json.dumps({'message': f'[{idx}/{total}] {name}: \"{item_label}\"'})}\n\n"
+                )
+                time.sleep(0.15)
+
+            yield f"event: done\ndata: {json.dumps({'success': True, 'updated': updated})}\n\n"
         except Exception as exc:  # noqa: BLE001
             yield f"event: scrape-error\ndata: {json.dumps({'error': str(exc)})}\n\n"
 

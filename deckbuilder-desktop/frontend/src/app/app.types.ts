@@ -15,7 +15,7 @@ export interface DeckOption {
     checked: boolean;
 }
 
-export type CardRecord = Record<string, string>;
+export type CardRecord = Record<string, string | boolean | number>;
 
 export interface CollectionCard {
     [key: string]: string | number | boolean;

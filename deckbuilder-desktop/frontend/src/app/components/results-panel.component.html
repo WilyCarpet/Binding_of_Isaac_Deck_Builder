@@ -20,6 +20,26 @@
       </ng-template>
       <strong>{{ c['Name'] }}</strong>
       <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+      <span class="owned-badge" *ngIf="isOwned(c)" title="In your collection">&#10003; Owned</span>
+      <span class="unowned-badge" *ngIf="hasOwnershipData() && !isOwned(c)" title="Not in your collection">&#10007; Unowned</span>
+    </button>
+  </div>
+</div>
+
+<div class="result-group" *ngIf="deckResult.eternal && deckResult.eternal.length > 0">
+  <h3>Eternal Treasure ({{ deckResult.eternal.length }})</h3>
+  <div class="card-grid">
+    <button type="button" class="card-tile" *ngFor="let c of deckResult.eternal" (click)="openCardDialog(c, 'Eternal Treasure', $event)">
+      <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else eternalFallbackImage">
+        <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+      </div>
+      <ng-template #eternalFallbackImage>
+        <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+      </ng-template>
+      <strong>{{ c['Name'] }}</strong>
+      <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+      <span class="owned-badge" *ngIf="isOwned(c)" title="In your collection">&#10003; Owned</span>
+      <span class="unowned-badge" *ngIf="hasOwnershipData() && !isOwned(c)" title="Not in your collection">&#10007; Unowned</span>
     </button>
   </div>
 </div>
@@ -38,6 +58,8 @@
         </ng-template>
         <strong>{{ c['Name'] }}</strong>
         <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+        <span class="owned-badge" *ngIf="isOwned(c)" title="In your collection">&#10003; Owned</span>
+        <span class="unowned-badge" *ngIf="hasOwnershipData() && !isOwned(c)" title="Not in your collection">&#10007; Unowned</span>
       </button>
     </div>
   </div>
@@ -57,6 +79,8 @@
         </ng-template>
         <strong>{{ c['Name'] }}</strong>
         <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+        <span class="owned-badge" *ngIf="isOwned(c)" title="In your collection">&#10003; Owned</span>
+        <span class="unowned-badge" *ngIf="hasOwnershipData() && !isOwned(c)" title="Not in your collection">&#10007; Unowned</span>
       </button>
     </div>
   </div>
@@ -76,6 +100,8 @@
         </ng-template>
         <strong>{{ c['Name'] }}</strong>
         <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+        <span class="owned-badge" *ngIf="isOwned(c)" title="In your collection">&#10003; Owned</span>
+        <span class="unowned-badge" *ngIf="hasOwnershipData() && !isOwned(c)" title="Not in your collection">&#10007; Unowned</span>
       </button>
     </div>
   </div>
@@ -93,6 +119,8 @@
       </ng-template>
       <strong>{{ c['Name'] }}</strong>
       <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+      <span class="owned-badge" *ngIf="isOwned(c)" title="In your collection">&#10003; Owned</span>
+      <span class="unowned-badge" *ngIf="hasOwnershipData() && !isOwned(c)" title="Not in your collection">&#10007; Unowned</span>
     </button>
   </div>
 </div>
@@ -109,25 +137,27 @@
       </ng-template>
       <strong>{{ c['Name'] }}</strong>
       <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
+      <span class="owned-badge" *ngIf="isOwned(c)" title="In your collection">&#10003; Owned</span>
+      <span class="unowned-badge" *ngIf="hasOwnershipData() && !isOwned(c)" title="Not in your collection">&#10007; Unowned</span>
     </button>
   </div>
 </div>
 
-<div class="result-group" *ngIf="deckResult.eternal && deckResult.eternal.length > 0">
-  <h3>Eternal Treasure ({{ deckResult.eternal.length }})</h3>
-  <div class="card-grid">
-    <button type="button" class="card-tile" *ngFor="let c of deckResult.eternal" (click)="openCardDialog(c, 'Eternal Treasure', $event)">
-      <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else eternalFallbackImage">
-        <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
-      </div>
-      <ng-template #eternalFallbackImage>
-        <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
-      </ng-template>
-      <strong>{{ c['Name'] }}</strong>
+<div class="shopping-list" *ngIf="hasOwnershipData() && shoppingList().length > 0">
+  <h3>&#128722; Cards You Don't Own ({{ shoppingList().length }})</h3>
+  <p class="shopping-list-note">Add these to your collection to use them in future builds.</p>
+  <ul class="shopping-list-items">
+    <li *ngFor="let c of shoppingList()">
+      <span class="shopping-card-name">{{ c['Name'] }}</span>
+      <span class="shopping-card-type" *ngIf="c['_table']">{{ tableDisplayName(c) }}</span>
       <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
-    </button>
-  </div>
+    </li>
+  </ul>
 </div>
+
+<p class="shopping-list-empty" *ngIf="hasOwnershipData() && shoppingList().length === 0 && totalCards() > 0">
+  &#10003; You own all cards in this deck!
+</p>
 
 <app-card-dialog
   *ngIf="selectedCard"

@@ -9,8 +9,10 @@
         <app-right-column [seed]="seed" [specplayers]="specplayers" [players]="players"
             [eternalshuffle]="eternalshuffle" [coreDeckState]="coreDeckState" [promoDeckState]="promoDeckState"
             [otherDeckState]="otherDeckState" [building]="building" [buildError]="buildError"
+            [ownedOnly]="ownedOnly"
             (seedChange)="seed = $event" (specplayersChange)="specplayers = $event" (playersChange)="players = $event"
-            (eternalshuffleChange)="eternalshuffle = $event" (build)="buildDeck()">
+            (eternalshuffleChange)="eternalshuffle = $event" (ownedOnlyChange)="ownedOnly = $event"
+            (build)="buildDeck()">
         </app-right-column>
     </section>
 

@@ -19,8 +19,8 @@ function toBackendImageUrl(localPath: string): string {
 
 export function getCardImageCandidates(card: CardRecord): string[] {
     const candidates: string[] = [];
-    const imageUrl = clean(card['Image URL']);
-    const localPath = clean(card['Image Local Path']);
+    const imageUrl = clean(card['Image URL'] as string | undefined);
+    const localPath = clean(card['Image Local Path'] as string | undefined);
 
     if (imageUrl) {
         candidates.push(imageUrl);

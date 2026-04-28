@@ -33,6 +33,7 @@ export class DeckBuilderComponent {
   specplayers = false;
   players = 4;
   eternalshuffle = false;
+  ownedOnly = false;
 
   building = false;
   buildError = '';
@@ -80,7 +81,8 @@ export class DeckBuilderComponent {
       seed: this.seed,
       specplayers: this.specplayers,
       players: this.players,
-      eternalshuffle: this.eternalshuffle,
+      eternal_count: this.eternalshuffle ? this.players : 0,
+      owned_only: this.ownedOnly,
       ...this.ratioValues,
     };
 

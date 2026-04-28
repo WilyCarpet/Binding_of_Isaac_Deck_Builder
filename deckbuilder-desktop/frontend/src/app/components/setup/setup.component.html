@@ -33,8 +33,33 @@
 
     @if (status === 'done') {
       <p class="setup-description setup-success">
-        ✅ Setup complete! Launching the app…
+        ✅ Setup complete!
       </p>
+      @if (populateStatus === 'idle') {
+        <p class="setup-description">
+          Populate character starting items? This fetches each character page on
+          <strong>foursouls.com</strong> to record which Eternal Treasure card
+          belongs to each character (used to exclude starting items from the
+          Treasure pool when players are assigned).
+        </p>
+        <button class="btn-secondary" (click)="populateStartingItems()">Populate Starting Items</button>
+        <button class="btn-primary" (click)="navigateToApp()">Skip &amp; Launch App</button>
+      }
+      @if (populateStatus === 'running') {
+        <p class="setup-description">Fetching character pages…</p>
+        <div class="log-box">
+          @for (msg of populateMessages; track $index) {
+            <p class="log-line">{{ msg }}</p>
+          }
+        </div>
+      }
+      @if (populateStatus === 'done') {
+        <p class="setup-description setup-success">✅ Starting items populated! Launching the app…</p>
+      }
+      @if (populateStatus === 'error') {
+        <p class="setup-description setup-error">⚠️ Populate failed: {{ populateError }}</p>
+        <button class="btn-primary" (click)="navigateToApp()">Launch App Anyway</button>
+      }
     }
 
     @if (status === 'error') {

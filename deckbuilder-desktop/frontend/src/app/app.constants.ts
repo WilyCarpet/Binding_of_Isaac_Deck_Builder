@@ -5,7 +5,7 @@ export const OFFICIAL: RatioValues = {
     ld_dsh: 5, ld_ls: 1, ld_5c: 6, ld_4c: 12, ld_3c: 11, ld_2c: 6, ld_1c: 2,
     md_eb: 1, md_bo: 30, md_b: 30, md_ce: 9, md_hce: 9, md_ge: 8, md_be: 8, md_c: 5,
     td_a: 40, td_pas: 44, td_pai: 10, td_ou: 5, td_s: 1,
-    sd_s: 3, rd_r: 0,
+    sd_s: 3, rd_r: 9, // 3×3 room grid (Requiem mechanic; ignored if no Room cards in selected sets)
 };
 
 export const DRAFT: RatioValues = {
@@ -13,7 +13,7 @@ export const DRAFT: RatioValues = {
     ld_dsh: 5, ld_ls: 1, ld_5c: 5, ld_4c: 10, ld_3c: 10, ld_2c: 5, ld_1c: 2,
     md_eb: 1, md_bo: 30, md_b: 30, md_ce: 9, md_hce: 9, md_ge: 8, md_be: 8, md_c: 5,
     td_a: 40, td_pas: 44, td_pai: 10, td_ou: 5, td_s: 1,
-    sd_s: 3, rd_r: 0,
+    sd_s: 3, rd_r: 9, // 3×3 room grid (Requiem mechanic; ignored if no Room cards in selected sets)
 };
 
 export const DECK_OPTIONS: {

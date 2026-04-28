@@ -256,6 +256,23 @@ def scrape_card(session: requests.Session, card_url: str, image_dir: str, downlo
     normalized_type = normalize_type_name(
         card_type) if card_type else "Uncategorized"
 
+    # Extract Starting Items for Character Cards from the "Eternal Card" section.
+    # Each character's Eternal Treasure card is their personal starting item.
+    starting_items = ""
+    if normalized_type == "Character Card":
+        for h3 in soup.find_all("h3"):
+            if "eternal" in h3.get_text(strip=True).lower():
+                sib = h3.find_next_sibling()
+                while sib:
+                    link = sib.find("a") if hasattr(sib, "find") else None
+                    if link:
+                        starting_items = clean_text(link.get_text())
+                        break
+                    if sib.name in ("h2", "h3", "h4"):
+                        break
+                    sib = sib.find_next_sibling()
+                break
+
     return {
         "Category": normalized_type,
         "Name": name,
@@ -268,6 +285,7 @@ def scrape_card(session: requests.Session, card_url: str, image_dir: str, downlo
         "Effect Type": effect_type,
         "Effect": effect_text,
         "Quote": quote,
+        "Starting Items": starting_items,
         "URL": card_url,
         "Image URL": image_url,
         "Image Local Path": image_path,
@@ -293,6 +311,7 @@ def get_export_columns() -> List[str]:
         "Effect Type",
         "Effect",
         "Quote",
+        "Starting Items",
         "URL",
         "Image URL",
         "Image Local Path",

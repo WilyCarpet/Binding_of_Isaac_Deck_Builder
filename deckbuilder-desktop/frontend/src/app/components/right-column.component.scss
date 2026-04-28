@@ -54,6 +54,13 @@ hr {
     padding-left: 0.7rem;
 }
 
+.rule-note {
+    font-size: 0.78rem;
+    color: #8fa5ba;
+    margin: 0.2rem 0 0.4rem;
+    line-height: 1.4;
+}
+
 .deck-list {
     display: grid;
     gap: 0.25rem;
@@ -99,4 +106,17 @@ hr {
     color: #ff9898;
     margin-top: 0.5rem;
     font-size: 0.9rem;
+}
+
+.owned-only-row {
+    margin-top: 0.6rem;
+    padding: 0.45rem 0.6rem;
+    background: rgba(40, 160, 80, 0.08);
+    border: 1px solid #3a6a4a;
+    border-radius: 6px;
+
+    label {
+        color: #9cdab4;
+        font-weight: 600;
+    }
 }

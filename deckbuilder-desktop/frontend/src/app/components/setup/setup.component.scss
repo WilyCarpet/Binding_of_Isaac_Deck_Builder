@@ -87,6 +87,23 @@
   }
 }
 
+.btn-secondary {
+  background: transparent;
+  color: var(--accent, #e94560);
+  border: 1px solid var(--accent, #e94560);
+  border-radius: 6px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 0.75rem;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(233, 69, 96, 0.12);
+  }
+}
+
 .progress-bar-track {
   background: var(--border, #0f3460);
   border-radius: 4px;
