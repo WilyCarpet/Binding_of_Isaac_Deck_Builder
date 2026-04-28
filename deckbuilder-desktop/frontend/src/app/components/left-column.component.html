@@ -17,30 +17,35 @@
   <h3>Loot Deck</h3>
   <div class="form-row" *ngFor="let key of lootKeys">
     <label>{{ labelMap[key] }}:</label>
-    <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+    <input type="number" min="0" [ngModel]="ratioValues[key]" (ngModelChange)="ratioValues[key] = $event; ratioValuesChanged.emit()" [disabled]="ratio !== 'c'">
   </div>
 
   <h3>Monster Deck</h3>
   <div class="form-row" *ngFor="let key of monsterKeys">
     <label>{{ labelMap[key] }}:</label>
-    <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+    <input type="number" min="0" [ngModel]="ratioValues[key]" (ngModelChange)="ratioValues[key] = $event; ratioValuesChanged.emit()" [disabled]="ratio !== 'c'">
   </div>
 
   <h3>Treasure Deck</h3>
   <div class="form-row" *ngFor="let key of treasureKeys">
     <label>{{ labelMap[key] }}:</label>
-    <input type="number" min="0" [(ngModel)]="ratioValues[key]" [disabled]="ratio !== 'c'">
+    <input type="number" min="0" [ngModel]="ratioValues[key]" (ngModelChange)="ratioValues[key] = $event; ratioValuesChanged.emit()" [disabled]="ratio !== 'c'">
   </div>
 
   <h3>Souls</h3>
   <div class="form-row">
     <label>{{ labelMap['sd_s'] }}:</label>
-    <input type="number" min="0" [(ngModel)]="ratioValues['sd_s']" [disabled]="ratio !== 'c'">
+    <input type="number" min="0" [ngModel]="ratioValues['sd_s']" (ngModelChange)="ratioValues['sd_s'] = $event; ratioValuesChanged.emit()" [disabled]="ratio !== 'c'">
   </div>
 
   <h3>Rooms</h3>
   <div class="form-row">
     <label>{{ labelMap['rd_r'] }}:</label>
-    <input type="number" min="0" [(ngModel)]="ratioValues['rd_r']" [disabled]="ratio !== 'c'">
+    <input type="number" min="0" [ngModel]="ratioValues['rd_r']" (ngModelChange)="ratioValues['rd_r'] = $event; ratioValuesChanged.emit()" [disabled]="ratio !== 'c'">
   </div>
+</div>
+
+<div class="live-count">
+  <span *ngIf="countLoading" class="live-count-loading">Calculating...</span>
+  <span *ngIf="!countLoading && liveCardCount !== null" class="live-count-value">~{{ liveCardCount }} cards will be drawn</span>
 </div>

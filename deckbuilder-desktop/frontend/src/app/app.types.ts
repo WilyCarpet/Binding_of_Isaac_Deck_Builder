@@ -35,3 +35,14 @@ export interface DeckResult {
     characters?: CardRecord[];
     eternal?: CardRecord[];
 }
+
+export interface SavedConfig {
+    name: string;
+    ratio: 'o' | 'd' | 'c';
+    ratioValues: RatioValues;
+    selectedDecks: string[];
+    seed: string;
+    specplayers: boolean;
+    players: number;
+    eternalshuffle: boolean;
+}

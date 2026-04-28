@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import random
+import secrets
 import sqlite3
 import subprocess
 import sys
@@ -16,9 +18,25 @@ app = Flask(__name__)
 CORS(app)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = PROJECT_ROOT.parent / "four-souls-scraper" / \
-    "four_souls_all_cards_by_category.db"
-CARD_IMAGE_DIR = PROJECT_ROOT.parent / "four-souls-scraper" / "card_images"
+
+
+def _resolve_paths() -> tuple[Path, Path]:
+    """Return (DB_PATH, CARD_IMAGE_DIR) for both dev and packaged modes.
+
+    When running as a PyInstaller frozen binary, the Electron main process sets
+    APP_USER_DATA to app.getPath('userData') so all mutable data is written to
+    the OS-appropriate user-data directory instead of next to the binary.
+    """
+    user_data = os.environ.get("APP_USER_DATA")
+    if user_data:
+        base = Path(user_data)
+        return base / "four_souls_all_cards_by_category.db", base / "card_images"
+    # Dev mode: data lives in the sibling four-souls-scraper workspace folder.
+    dev_base = PROJECT_ROOT.parent / "four-souls-scraper"
+    return dev_base / "four_souls_all_cards_by_category.db", dev_base / "card_images"
+
+
+DB_PATH, CARD_IMAGE_DIR = _resolve_paths()
 OWNERSHIP_TABLE = "Card_Ownership"
 
 # ---------------------------------------------------------------------------
@@ -408,6 +426,8 @@ def build_deck() -> Any:
 
     ratio_mode: str = payload.get("ratio", "o")
     seed_val: str = str(payload.get("seed", "")).strip()
+    if not seed_val:
+        seed_val = secrets.token_hex(4)  # 8-char hex, always reproducible
     specplayers: bool = bool(payload.get("specplayers", False))
     players: int = max(2, min(12, int(payload.get("players", 4))))
     owned_only: bool = bool(payload.get("owned_only", False))
@@ -438,7 +458,7 @@ def build_deck() -> Any:
         ratios["sd_s"] = players + 1
 
     # Seed RNG
-    random.seed(seed_val if seed_val else None)
+    random.seed(seed_val)
 
     warnings: list[str] = []
     result: dict[str, Any] = {}
@@ -457,9 +477,12 @@ def build_deck() -> Any:
             ).fetchall()
             char_pool = [dict(r) for r in char_rows]
             _annotate_ownership(conn, "Character_Card", char_pool)
+            if owned_only:
+                char_pool = [c for c in char_pool if c["_owned"]]
             if len(char_pool) < players:
+                qualifier = "owned " if owned_only else ""
                 warnings.append(
-                    f"Only {len(char_pool)} characters available for {players} players; "
+                    f"Only {len(char_pool)} {qualifier}characters available for {players} players; "
                     "try adding more sets."
                 )
                 result["characters"] = char_pool
@@ -500,8 +523,11 @@ def build_deck() -> Any:
             ).fetchall()
             et_pool = [dict(r) for r in et_rows]
             _annotate_ownership(conn, "Eternal_Treasure_Card", et_pool)
+            if owned_only:
+                et_pool = [c for c in et_pool if c["_owned"]]
             if not et_pool:
-                warnings.append("No Eternal Treasure cards available in the selected sets.")
+                qualifier = "owned " if owned_only else ""
+                warnings.append(f"No {qualifier}Eternal Treasure cards available in the selected sets.")
             elif len(et_pool) < eternal_count:
                 warnings.append(
                     f"Only {len(et_pool)} Eternal Treasure cards available "
@@ -514,10 +540,98 @@ def build_deck() -> Any:
     return jsonify({
         "deck": result,
         "warnings": warnings,
-        "seed": seed_val or None,
+        "seed": seed_val,
         "selected_decks": selected_decks,
         "ratio_mode": ratio_mode,
     })
+
+
+@app.post("/deck/count")
+def count_deck() -> Any:
+    """Return the exact number of cards that would be drawn with the given settings."""
+    payload = request.get_json(silent=True) or {}
+
+    selected_decks: list[str] = payload.get("decks", ["b2"])
+    if not isinstance(selected_decks, list) or not selected_decks:
+        return jsonify({"error": "At least one deck must be selected."}), 400
+
+    ratio_mode: str = payload.get("ratio", "o")
+    specplayers: bool = bool(payload.get("specplayers", False))
+    players: int = max(2, min(12, int(payload.get("players", 4))))
+    owned_only: bool = bool(payload.get("owned_only", False))
+
+    if "eternal_count" in payload:
+        eternal_count: int = max(0, int(payload.get("eternal_count", 0)))
+    elif bool(payload.get("eternalshuffle", False)):
+        eternal_count = players if specplayers else 1
+    else:
+        eternal_count = 0
+
+    if ratio_mode == "d":
+        ratios = dict(DRAFT_RATIOS)
+    elif ratio_mode == "c":
+        ratios = {
+            key: max(0, int(payload.get(key, default)))
+            for key, default in OFFICIAL_RATIOS.items()
+        }
+    else:
+        ratios = dict(OFFICIAL_RATIOS)
+
+    if specplayers and ratio_mode in ("o", "d"):
+        ratios["ld_wc"] = ratios["ld_wc"] + players * 3
+        ratios["sd_s"] = players + 1
+
+    total = 0
+    ph = _placeholders(selected_decks)
+
+    with get_connection() as conn:
+        ensure_collection_table(conn)
+
+        for group_keys in DECK_GROUPS.values():
+            for key in group_keys:
+                requested = ratios[key]
+                if requested == 0:
+                    continue
+                table = RATIO_TO_TABLE[key]
+                if owned_only:
+                    pool_size = conn.execute(
+                        f'SELECT COUNT(*) FROM "{table}" t '
+                        f'INNER JOIN "{OWNERSHIP_TABLE}" o '
+                        f'ON o.table_name = ? AND o.card_rowid = t.rowid AND o.owned = 1 '
+                        f'WHERE t."Set Code" IN ({ph})',
+                        [table, *selected_decks],
+                    ).fetchone()[0]
+                else:
+                    pool_size = conn.execute(
+                        f'SELECT COUNT(*) FROM "{table}" WHERE "Set Code" IN ({ph})',
+                        selected_decks,
+                    ).fetchone()[0]
+                total += min(pool_size, requested)
+
+        if specplayers:
+            pool_size = conn.execute(
+                f'SELECT COUNT(*) FROM "Character_Card" WHERE "Set Code" IN ({ph})',
+                selected_decks,
+            ).fetchone()[0]
+            total += min(pool_size, players)
+
+        if eternal_count > 0:
+            if owned_only:
+                pool_size = conn.execute(
+                    f'SELECT COUNT(*) FROM "Eternal_Treasure_Card" t '
+                    f'INNER JOIN "{OWNERSHIP_TABLE}" o '
+                    f'ON o.table_name = ? AND o.card_rowid = t.rowid AND o.owned = 1 '
+                    f'WHERE t."Set Code" IN ({ph})',
+                    ["Eternal_Treasure_Card", *selected_decks],
+                ).fetchone()[0]
+            else:
+                pool_size = conn.execute(
+                    f'SELECT COUNT(*) FROM "Eternal_Treasure_Card" WHERE "Set Code" IN ({ph})',
+                    selected_decks,
+                ).fetchone()[0]
+            total += min(pool_size, eternal_count)
+
+    return jsonify({"count": total})
 
 
 # ---------------------------------------------------------------------------
@@ -536,17 +650,30 @@ def setup_scrape() -> Any:
         return jsonify({"error": "Scraper is already running."}), 409
 
     no_images = request.args.get("no_images", "false").lower() == "true"
-    scraper_script = PROJECT_ROOT.parent / "four-souls-scraper" / "scrapeForCard.py"
     output_path = str(DB_PATH.parent)
 
-    cmd = [
-        sys.executable,
-        str(scraper_script),
-        "--output-format", "sqlite",
-        "--output-path", output_path,
-    ]
+    if getattr(sys, "frozen", False):
+        # Running as a PyInstaller binary: re-invoke ourselves with --scrape-mode
+        # so the same executable handles scraping without needing a separate Python.
+        cmd = [
+            sys.executable,
+            "--scrape-mode",
+            "--output-format", "sqlite",
+            "--output-path", output_path,
+        ]
+    else:
+        # Dev mode: call the scraper script directly with the current interpreter.
+        scraper_script = PROJECT_ROOT.parent / "four-souls-scraper" / "scrapeForCard.py"
+        cmd = [
+            sys.executable,
+            str(scraper_script),
+            "--output-format", "sqlite",
+            "--output-path", output_path,
+        ]
     if no_images:
         cmd.append("--no-images")
+
+    scrape_cwd = output_path if getattr(sys, "frozen", False) else str(PROJECT_ROOT.parent / "four-souls-scraper")
 
     def generate():
         global _scraper_process  # noqa: PLW0603
@@ -556,7 +683,7 @@ def setup_scrape() -> Any:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                cwd=str(PROJECT_ROOT.parent / "four-souls-scraper"),
+                cwd=scrape_cwd,
                 bufsize=1,
             )
             assert _scraper_process.stdout is not None

@@ -1,0 +1,151 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # required to create GitHub Releases and upload assets
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: deckbuilder-desktop/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: deckbuilder-desktop/backend/requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: deckbuilder-desktop/frontend
+        run: npm ci
+
+      - name: Install root dependencies
+        working-directory: deckbuilder-desktop
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: deckbuilder-desktop/backend
+        run: pip install -r requirements.txt
+
+      - name: Build Angular frontend
+        working-directory: deckbuilder-desktop
+        run: npm run build:frontend
+
+      - name: Build backend binary (PyInstaller)
+        working-directory: deckbuilder-desktop
+        run: npm run build:backend
+
+      - name: Package Electron app
+        working-directory: deckbuilder-desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish=always
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: deckbuilder-desktop/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: deckbuilder-desktop/backend/requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: deckbuilder-desktop/frontend
+        run: npm ci
+
+      - name: Install root dependencies
+        working-directory: deckbuilder-desktop
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: deckbuilder-desktop/backend
+        run: pip install -r requirements.txt
+
+      - name: Build Angular frontend
+        working-directory: deckbuilder-desktop
+        run: npm run build:frontend
+
+      - name: Build backend binary (PyInstaller)
+        working-directory: deckbuilder-desktop
+        run: npm run build:backend
+
+      - name: Package Electron app
+        working-directory: deckbuilder-desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --linux --publish=always
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: deckbuilder-desktop/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: deckbuilder-desktop/backend/requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: deckbuilder-desktop/frontend
+        run: npm ci
+
+      - name: Install root dependencies
+        working-directory: deckbuilder-desktop
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: deckbuilder-desktop/backend
+        run: pip install -r requirements.txt
+
+      - name: Build Angular frontend
+        working-directory: deckbuilder-desktop
+        run: npm run build:frontend
+
+      - name: Build backend binary (PyInstaller)
+        working-directory: deckbuilder-desktop
+        run: npm run build:backend
+
+      - name: Package Electron app
+        working-directory: deckbuilder-desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS codesigning is intentionally skipped for the initial release.
+          # Users will see a Gatekeeper quarantine dialog; they can right-click → Open to bypass.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --mac --publish=always

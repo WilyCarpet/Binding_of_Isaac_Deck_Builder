@@ -6,9 +6,13 @@ declare global {
     interface Window {
         electronAPI?: {
             buildDeck: (payload: DeckBuildRequest) => Promise<DeckBuildResponse>;
+            countDeck: (payload: DeckBuildRequest) => Promise<{ count: number }>;
             getCollectionCards: () => Promise<CollectionCardsResponse>;
             updateCollectionCard: (cardId: string, payload: CollectionUpdateRequest) => Promise<CollectionUpdateResponse>;
             checkDbExists: () => Promise<boolean>;
+            saveConfig: (config: SavedConfigIpc) => Promise<{ ok: boolean }>;
+            loadConfigs: () => Promise<SavedConfigIpc[]>;
+            deleteConfig: (name: string) => Promise<{ ok: boolean }>;
         };
     }
 }
@@ -73,4 +77,15 @@ interface CollectionUpdateResponse {
     card_id: string;
     owned: boolean;
     owned_count: number;
+}
+
+interface SavedConfigIpc {
+    name: string;
+    ratio: 'o' | 'd' | 'c';
+    ratioValues: Record<string, number>;
+    selectedDecks: string[];
+    seed: string;
+    specplayers: boolean;
+    players: number;
+    eternalshuffle: boolean;
 }

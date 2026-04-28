@@ -9,6 +9,12 @@ const projectRoot = path.resolve(__dirname, '..');
 const backendScript = path.join(projectRoot, 'backend', 'app.py');
 const venvPython = path.resolve(projectRoot, '..', '.venv', 'bin', 'python');
 
+// Resolves the packaged PyInstaller backend binary path.
+function getPackagedBackendPath() {
+    const ext = process.platform === 'win32' ? '.exe' : '';
+    return path.join(process.resourcesPath, 'backend', `backend${ext}`);
+}
+
 let mainWindow;
 let backendProcess;
 
@@ -41,14 +47,34 @@ async function waitForBackend(maxAttempts = 40) {
 }
 
 function startBackend() {
-    const pythonCommand = fs.existsSync(venvPython) ? venvPython : 'python3';
-    console.log(`[flask] launching backend with: ${pythonCommand}`);
+    let spawnArgs;
+    if (app.isPackaged) {
+        const binaryPath = getPackagedBackendPath();
+        console.log(`[flask] launching packaged backend: ${binaryPath}`);
+        spawnArgs = {
+            cmd: binaryPath,
+            args: [],
+            opts: {
+                cwd: app.getPath('userData'),
+                env: { ...process.env, APP_USER_DATA: app.getPath('userData') },
+                stdio: ['ignore', 'pipe', 'pipe']
+            }
+        };
+    } else {
+        const pythonCommand = fs.existsSync(venvPython) ? venvPython : 'python3';
+        console.log(`[flask] launching backend with: ${pythonCommand}`);
+        spawnArgs = {
+            cmd: pythonCommand,
+            args: [backendScript],
+            opts: {
+                cwd: projectRoot,
+                env: process.env,
+                stdio: ['ignore', 'pipe', 'pipe']
+            }
+        };
+    }
 
-    backendProcess = spawn(pythonCommand, [backendScript], {
-        cwd: projectRoot,
-        env: process.env,
-        stdio: ['ignore', 'pipe', 'pipe']
-    });
+    backendProcess = spawn(spawnArgs.cmd, spawnArgs.args, spawnArgs.opts);
 
     backendProcess.stdout.on('data', (data) => {
         process.stdout.write(`[flask] ${data}`);
@@ -97,7 +123,13 @@ function createWindow() {
         );
     });
 
-    mainWindow.loadURL(FRONTEND_URL);
+    if (app.isPackaged) {
+        mainWindow.loadFile(
+            path.join(__dirname, '..', 'frontend', 'dist', 'frontend', 'browser', 'index.html')
+        );
+    } else {
+        mainWindow.loadURL(FRONTEND_URL);
+    }
 }
 
 ipcMain.handle('deck:build', async (_event, payload) => {
@@ -147,6 +179,51 @@ ipcMain.handle('collection:updateCard', async (_event, cardId, payload) => {
     if (!response.ok) {
         const body = await response.text();
         throw new Error(`Failed to update collection card: ${body}`);
+    }
+
+    return response.json();
+});
+
+const SAVED_CONFIGS_FILE = () => path.join(app.getPath('userData'), 'saved-configs.json');
+
+function readSavedConfigs() {
+    try {
+        return JSON.parse(fs.readFileSync(SAVED_CONFIGS_FILE(), 'utf8'));
+    } catch (_err) {
+        return [];
+    }
+}
+
+ipcMain.handle('config:save', (_event, config) => {
+    const configs = readSavedConfigs();
+    const idx = configs.findIndex((c) => c.name === config.name);
+    if (idx >= 0) {
+        configs[idx] = config;
+    } else {
+        configs.push(config);
+    }
+    fs.writeFileSync(SAVED_CONFIGS_FILE(), JSON.stringify(configs, null, 2), 'utf8');
+    return { ok: true };
+});
+
+ipcMain.handle('config:load', () => readSavedConfigs());
+
+ipcMain.handle('config:delete', (_event, name) => {
+    const configs = readSavedConfigs().filter((c) => c.name !== name);
+    fs.writeFileSync(SAVED_CONFIGS_FILE(), JSON.stringify(configs, null, 2), 'utf8');
+    return { ok: true };
+});
+
+ipcMain.handle('deck:count', async (_event, payload) => {
+    const response = await fetch(`${FLASK_URL}/deck/count`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Failed to count deck: ${body}`);
     }
 
     return response.json();

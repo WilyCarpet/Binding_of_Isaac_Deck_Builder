@@ -1,4 +1,13 @@
-<h2>Generated Deck &mdash; {{ totalCards() }} cards total</h2>
+<div class="results-header">
+  <h2>Generated Deck &mdash; {{ totalCards() }} cards total</h2>
+  <div class="results-actions">
+    <input type="text" class="search-input" [(ngModel)]="searchTerm" placeholder="Search cards...">
+    <button type="button" class="action-btn" (click)="rebuild.emit()">Rebuild</button>
+    <button type="button" class="action-btn" (click)="exportResults()">Export</button>
+    <button type="button" class="action-btn" (click)="copyToClipboard()">Copy</button>
+    <button type="button" class="action-btn action-btn--danger" (click)="clearResults.emit()">Clear</button>
+  </div>
+</div>
 
 <div class="warnings" *ngIf="buildWarnings.length > 0">
   <strong>Warnings:</strong>
@@ -11,7 +20,7 @@
 <div class="result-group" *ngIf="deckResult.characters && deckResult.characters.length > 0">
   <h3>Characters ({{ deckResult.characters.length }})</h3>
   <div class="card-grid">
-    <button type="button" class="card-tile" *ngFor="let c of deckResult.characters" (click)="openCardDialog(c, 'Character', $event)">
+    <button type="button" class="card-tile" *ngFor="let c of filteredCards(deckResult.characters!)" (click)="openCardDialog(c, 'Character', $event)">
       <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else characterFallbackImage">
         <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
       </div>
@@ -29,7 +38,7 @@
 <div class="result-group" *ngIf="deckResult.eternal && deckResult.eternal.length > 0">
   <h3>Eternal Treasure ({{ deckResult.eternal.length }})</h3>
   <div class="card-grid">
-    <button type="button" class="card-tile" *ngFor="let c of deckResult.eternal" (click)="openCardDialog(c, 'Eternal Treasure', $event)">
+    <button type="button" class="card-tile" *ngFor="let c of filteredCards(deckResult.eternal!)" (click)="openCardDialog(c, 'Eternal Treasure', $event)">
       <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else eternalFallbackImage">
         <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
       </div>
@@ -110,7 +119,7 @@
 <div class="result-group" *ngIf="countCards(deckResult.souls) > 0">
   <h3>Souls ({{ countCards(deckResult.souls) }})</h3>
   <div class="card-grid">
-    <button type="button" class="card-tile" *ngFor="let c of deckResult.souls['sd_s']" (click)="openCardDialog(c, 'Bonus Soul', $event)">
+    <button type="button" class="card-tile" *ngFor="let c of filteredCards(deckResult.souls['sd_s'])" (click)="openCardDialog(c, 'Bonus Soul', $event)">
       <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else soulFallbackImage">
         <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
       </div>
@@ -128,7 +137,7 @@
 <div class="result-group" *ngIf="countCards(deckResult.rooms) > 0">
   <h3>Rooms ({{ countCards(deckResult.rooms) }})</h3>
   <div class="card-grid">
-    <button type="button" class="card-tile" *ngFor="let c of deckResult.rooms['rd_r']" (click)="openCardDialog(c, 'Room', $event)">
+    <button type="button" class="card-tile" *ngFor="let c of filteredCards(deckResult.rooms['rd_r'])" (click)="openCardDialog(c, 'Room', $event)">
       <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else roomFallbackImage">
         <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
       </div>
@@ -146,13 +155,19 @@
 <div class="shopping-list" *ngIf="hasOwnershipData() && shoppingList().length > 0">
   <h3>&#128722; Cards You Don't Own ({{ shoppingList().length }})</h3>
   <p class="shopping-list-note">Add these to your collection to use them in future builds.</p>
-  <ul class="shopping-list-items">
-    <li *ngFor="let c of shoppingList()">
-      <span class="shopping-card-name">{{ c['Name'] }}</span>
-      <span class="shopping-card-type" *ngIf="c['_table']">{{ tableDisplayName(c) }}</span>
+  <div class="card-grid">
+    <button type="button" class="card-tile" *ngFor="let c of shoppingList()" (click)="openCardDialog(c, tableDisplayName(c), $event)">
+      <div class="tile-image-wrapper" *ngIf="shouldShowTileImage(c); else shoppingFallbackImage">
+        <img [src]="tileImageSrc(c)" [alt]="tileFallbackTitle(c)" loading="lazy" (error)="onTileImageError(c)">
+      </div>
+      <ng-template #shoppingFallbackImage>
+        <div class="tile-image-fallback">{{ tileFallbackTitle(c) }}</div>
+      </ng-template>
+      <strong>{{ c['Name'] }}</strong>
       <span class="set-tag" *ngIf="c['Set']">{{ c['Set'] }}</span>
-    </li>
-  </ul>
+      <span class="unowned-badge" title="Not in your collection">&#10007; Unowned</span>
+    </button>
+  </div>
 </div>
 
 <p class="shopping-list-empty" *ngIf="hasOwnershipData() && shoppingList().length === 0 && totalCards() > 0">

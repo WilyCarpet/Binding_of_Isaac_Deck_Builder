@@ -43,6 +43,8 @@
           },
           "configurations": {
             "production": {
+              "outputPath": "dist/frontend",
+              "outputMode": "static",
               "budgets": [
                 {
                   "type": "initial",

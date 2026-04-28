@@ -1,2 +1,8 @@
 flask==3.1.0
 flask-cors==5.0.0
+pyinstaller
+# Scraper dependencies (bundled into the same PyInstaller binary via launcher.py)
+requests
+beautifulsoup4
+pandas
+openpyxl

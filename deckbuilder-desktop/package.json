@@ -3,6 +3,10 @@
     "version": "0.1.0",
     "private": true,
     "main": "electron/main.js",
+    "productName": "Four Souls Deck Builder",
+    "description": "Desktop deck-builder for the Four Souls card game",
+    "author": "",
+    "homepage": "https://github.com/",
     "scripts": {
         "dev:preflight": "bash -lc 'for p in 4200 5001; do pids=$(lsof -t -i :$p || true); if [ -n \"$pids\" ]; then echo \"Killing stale process(es) on port $p: $pids\"; kill $pids || true; fi; done'",
         "dev:backend": "bash -lc 'VENV_PY=\"$(cd .. && pwd)/.venv/bin/python\"; if [ -x \"$VENV_PY\" ]; then \"$VENV_PY\" backend/app.py; else python3 backend/app.py; fi'",
@@ -10,12 +14,58 @@
         "dev:web": "npm run dev:preflight && concurrently -k \"npm run dev:frontend\" \"npm run dev:backend\"",
         "dev:electron:attach": "wait-on http-get://127.0.0.1:4200 && electron --no-sandbox --disable-gpu --disable-features=MediaRouter --disable-dev-shm-usage .",
         "dev:electron": "npm run dev:preflight && concurrently -k \"npm run dev:frontend\" \"npm run dev:electron:attach\"",
-        "dev": "npm run dev:electron"
+        "dev": "npm run dev:electron",
+        "build:frontend": "cd frontend && npx ng build --configuration=production",
+        "build:backend": "cd backend && pyinstaller backend.spec",
+        "pack": "npm run build:frontend && npm run build:backend && electron-builder --dir",
+        "dist": "npm run build:frontend && npm run build:backend && electron-builder",
+        "dist:win": "npm run build:frontend && npm run build:backend && electron-builder --win",
+        "dist:linux": "npm run build:frontend && npm run build:backend && electron-builder --linux",
+        "dist:mac": "npm run build:frontend && npm run build:backend && electron-builder --mac"
+    },
+    "build": {
+        "appId": "com.foursouls.deckbuilder",
+        "productName": "Four Souls Deck Builder",
+        "icon": "assets/icon",
+        "files": [
+            "electron/**",
+            "frontend/dist/**",
+            "package.json"
+        ],
+        "extraResources": [
+            {
+                "from": "backend/dist/backend",
+                "to": "backend",
+                "filter": ["**/*"]
+            }
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": ["x64"]
+                }
+            ]
+        },
+        "linux": {
+            "target": ["AppImage", "deb"],
+            "category": "Game"
+        },
+        "mac": {
+            "target": ["dmg"],
+            "category": "public.app-category.games"
+        },
+        "publish": [
+            {
+                "provider": "github"
+            }
+        ]
     },
     "devDependencies": {
         "concurrently": "^9.0.1",
         "cross-env": "^7.0.3",
         "electron": "^32.1.2",
+        "electron-builder": "^25.0.0",
         "wait-on": "^8.0.1"
     }
 }

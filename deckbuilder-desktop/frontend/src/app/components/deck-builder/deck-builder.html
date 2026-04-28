@@ -1,7 +1,10 @@
 <main class="layout">
     <section class="panel">
         <app-left-column [ratio]="ratio" [ratioValues]="ratioValues" [labelMap]="LABEL_MAP" [lootKeys]="LOOT_KEYS"
-            [monsterKeys]="MONSTER_KEYS" [treasureKeys]="TREASURE_KEYS" (ratioChange)="onRatioChange($event)">
+            [monsterKeys]="MONSTER_KEYS" [treasureKeys]="TREASURE_KEYS"
+            [liveCardCount]="liveCardCount" [countLoading]="countLoading"
+            (ratioChange)="onRatioChange($event)"
+            (ratioValuesChanged)="triggerCountUpdate()">
         </app-left-column>
     </section>
 
@@ -9,16 +12,26 @@
         <app-right-column [seed]="seed" [specplayers]="specplayers" [players]="players"
             [eternalshuffle]="eternalshuffle" [coreDeckState]="coreDeckState" [promoDeckState]="promoDeckState"
             [otherDeckState]="otherDeckState" [building]="building" [buildError]="buildError"
-            [ownedOnly]="ownedOnly"
-            (seedChange)="seed = $event" (specplayersChange)="specplayers = $event" (playersChange)="players = $event"
-            (eternalshuffleChange)="eternalshuffle = $event" (ownedOnlyChange)="ownedOnly = $event"
-            (build)="buildDeck()">
+            [ownedOnly]="ownedOnly" [savedConfigs]="savedConfigs" [configNameInput]="configNameInput"
+            (seedChange)="seed = $event"
+            (specplayersChange)="onSpecplayersChange($event)"
+            (playersChange)="onPlayersChange($event)"
+            (eternalshuffleChange)="onEternalshuffleChange($event)"
+            (ownedOnlyChange)="onOwnedOnlyChange($event)"
+            (build)="buildDeck()"
+            (configNameInputChange)="configNameInput = $event"
+            (saveConfig)="saveCurrentConfig()"
+            (loadConfig)="loadConfig($event)"
+            (deleteConfig)="deleteConfig($event)"
+            (deckSelectionChanged)="triggerCountUpdate()">
         </app-right-column>
     </section>
 
     <section class="panel results-panel" *ngIf="deckResult">
         <app-results-panel [deckResult]="deckResult" [buildWarnings]="buildWarnings" [resultSeed]="resultSeed"
-            [labelMap]="LABEL_MAP">
+            [labelMap]="LABEL_MAP"
+            (rebuild)="buildDeck()"
+            (clearResults)="deckResult = null; resultSeed = null">
         </app-results-panel>
     </section>
 </main>

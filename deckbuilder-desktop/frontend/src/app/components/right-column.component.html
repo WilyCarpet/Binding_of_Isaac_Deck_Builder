@@ -1,4 +1,27 @@
 <h2>Players &amp; Misc</h2>
+
+<h3>Saved Setups</h3>
+<div class="save-config-row">
+  <input
+    type="text"
+    class="config-name-input"
+    [ngModel]="configNameInput"
+    (ngModelChange)="configNameInputChange.emit($event)"
+    placeholder="Config name..."
+    maxlength="64">
+  <button type="button" class="config-btn" (click)="saveConfig.emit()" [disabled]="!configNameInput.trim()">Save</button>
+</div>
+<div class="load-config-row" *ngIf="savedConfigs.length > 0">
+  <select class="config-select" [(ngModel)]="selectedConfigIndex">
+    <option value="" disabled>Load a setup...</option>
+    <option *ngFor="let c of savedConfigs; let i = index" [value]="i">{{ c.name }}</option>
+  </select>
+  <button type="button" class="config-btn" (click)="onLoadConfig()" [disabled]="!selectedConfigIndex">Load</button>
+  <button type="button" class="config-btn config-btn--danger" (click)="onDeleteConfig()" [disabled]="!selectedConfigIndex">Delete</button>
+</div>
+
+<hr>
+
 <div class="form-row">
   <label for="seed">Seed:</label>
   <input
@@ -55,27 +78,39 @@
 
 <h3>Core Decks</h3>
 <hr>
+<div class="deck-group-actions">
+  <button type="button" class="select-all-btn" (click)="toggleAll(coreDeckState, true)">All</button>
+  <button type="button" class="select-all-btn" (click)="toggleAll(coreDeckState, false)">None</button>
+</div>
 <div class="deck-list">
   <label class="deck-item" *ngFor="let d of coreDeckState">
-    <input type="checkbox" [(ngModel)]="d.checked">
+    <input type="checkbox" [(ngModel)]="d.checked" (change)="deckSelectionChanged.emit()">
     <span>{{ d.label }}</span>
   </label>
 </div>
 
 <h3>Promotional Decks</h3>
 <hr>
+<div class="deck-group-actions">
+  <button type="button" class="select-all-btn" (click)="toggleAll(promoDeckState, true)">All</button>
+  <button type="button" class="select-all-btn" (click)="toggleAll(promoDeckState, false)">None</button>
+</div>
 <div class="deck-list">
   <label class="deck-item" *ngFor="let d of promoDeckState">
-    <input type="checkbox" [(ngModel)]="d.checked">
+    <input type="checkbox" [(ngModel)]="d.checked" (change)="deckSelectionChanged.emit()">
     <span>{{ d.label }}</span>
   </label>
 </div>
 
 <h3>Other / New Releases</h3>
 <hr>
+<div class="deck-group-actions">
+  <button type="button" class="select-all-btn" (click)="toggleAll(otherDeckState, true)">All</button>
+  <button type="button" class="select-all-btn" (click)="toggleAll(otherDeckState, false)">None</button>
+</div>
 <div class="deck-list">
   <label class="deck-item" *ngFor="let d of otherDeckState">
-    <input type="checkbox" [(ngModel)]="d.checked">
+    <input type="checkbox" [(ngModel)]="d.checked" (change)="deckSelectionChanged.emit()">
     <span>{{ d.label }}</span>
   </label>
 </div>
@@ -95,3 +130,4 @@
 </div>
 
 <p class="error" *ngIf="buildError">{{ buildError }}</p>
+

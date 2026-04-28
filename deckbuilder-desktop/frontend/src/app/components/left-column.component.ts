@@ -17,6 +17,9 @@ export class LeftColumnComponent {
     @Input({ required: true }) lootKeys!: readonly string[];
     @Input({ required: true }) monsterKeys!: readonly string[];
     @Input({ required: true }) treasureKeys!: readonly string[];
+    @Input() liveCardCount: number | null = null;
+    @Input() countLoading: boolean = false;
 
     @Output() ratioChange = new EventEmitter<'o' | 'd' | 'c'>();
+    @Output() ratioValuesChanged = new EventEmitter<void>();
 }

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { getCardImageCandidates } from '../card-image.util';
 import { CardRecord, DeckResult } from '../app.types';
@@ -7,7 +8,7 @@ import { CardDialogComponent } from './card-dialog.component';
 
 @Component({
     selector: 'app-results-panel',
-    imports: [CommonModule, CardDialogComponent],
+    imports: [CommonModule, FormsModule, CardDialogComponent],
     templateUrl: './results-panel.component.html',
     styleUrl: './results-panel.component.scss'
 })
@@ -17,12 +18,98 @@ export class ResultsPanelComponent {
     @Input({ required: true }) resultSeed!: string | null;
     @Input({ required: true }) labelMap!: Record<string, string>;
 
+    @Output() rebuild = new EventEmitter<void>();
+    @Output() clearResults = new EventEmitter<void>();
+
+    searchTerm = '';
     selectedCard: CardRecord | null = null;
     selectedContext = '';
     private tileImageIndexes = new Map<string, number>();
 
     sectionEntries(section: Record<string, CardRecord[]>): [string, CardRecord[]][] {
-        return Object.entries(section).filter(([, arr]) => arr.length > 0);
+        return Object.entries(section)
+            .filter(([, arr]) => arr.length > 0)
+            .map(([key, arr]): [string, CardRecord[]] => [
+                key,
+                this.searchTerm ? arr.filter(c => this.matchesSearch(c)) : arr,
+            ])
+            .filter(([, arr]) => arr.length > 0);
+    }
+
+    filteredCards(cards: CardRecord[]): CardRecord[] {
+        return this.searchTerm ? cards.filter(c => this.matchesSearch(c)) : cards;
+    }
+
+    private matchesSearch(card: CardRecord): boolean {
+        const term = this.searchTerm.toLowerCase();
+        return (
+            String(card['Name'] ?? '').toLowerCase().includes(term) ||
+            String(card['Set'] ?? '').toLowerCase().includes(term) ||
+            String(card['Effect'] ?? '').toLowerCase().includes(term)
+        );
+    }
+
+    private buildExportText(): string {
+        const lines: string[] = [];
+
+        if (this.resultSeed) {
+            lines.push(`Seed: ${this.resultSeed}`);
+            lines.push('');
+        }
+
+        if (this.deckResult.characters?.length) {
+            lines.push('=== Characters ===');
+            for (const c of this.deckResult.characters) {
+                lines.push(`${c['Name']}${c['Set'] ? ` (${c['Set']})` : ''}`);
+            }
+            lines.push('');
+        }
+
+        if (this.deckResult.eternal?.length) {
+            lines.push('=== Eternal Treasure ===');
+            for (const c of this.deckResult.eternal) {
+                lines.push(`${c['Name']}${c['Set'] ? ` (${c['Set']})` : ''}`);
+            }
+            lines.push('');
+        }
+
+        const sectionDefs: [string, Record<string, CardRecord[]>][] = [
+            ['Loot Deck', this.deckResult.loot],
+            ['Monster Deck', this.deckResult.monster],
+            ['Treasure Deck', this.deckResult.treasure],
+            ['Souls', this.deckResult.souls],
+            ['Rooms', this.deckResult.rooms],
+        ];
+
+        for (const [sectionName, section] of sectionDefs) {
+            const entries = Object.entries(section).filter(([, arr]) => arr.length > 0);
+            if (!entries.length) continue;
+            lines.push(`=== ${sectionName} ===`);
+            for (const [key, arr] of entries) {
+                lines.push(`--- ${this.labelMap[key] ?? key} ---`);
+                for (const c of arr) {
+                    lines.push(`${c['Name']}${c['Set'] ? ` (${c['Set']})` : ''}`);
+                }
+            }
+            lines.push('');
+        }
+
+        return lines.join('\n');
+    }
+
+    exportResults(): void {
+        const text = this.buildExportText();
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'deck-export.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async copyToClipboard(): Promise<void> {
+        await navigator.clipboard.writeText(this.buildExportText());
     }
 
     countCards(section: Record<string, CardRecord[]>): number {
@@ -118,3 +205,4 @@ export class ResultsPanelComponent {
         return this.tileImageIndexes.get(this.getCardKey(card)) ?? 0;
     }
 }
+
