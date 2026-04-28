@@ -164,10 +164,11 @@ def _annotate_ownership(
     table: str,
     cards: list[dict[str, Any]],
 ) -> None:
-    """Mutate cards in-place: add _owned (bool), _table (str) to each card."""
+    """Mutate cards in-place: add _owned (bool), _owned_count (int), _table (str)."""
     for card in cards:
         card["_table"] = table
         card["_owned"] = False
+        card["_owned_count"] = 0
     if not cards:
         return
     rowids = [int(c["_card_rowid"]) for c in cards if "_card_rowid" in c]
@@ -175,13 +176,16 @@ def _annotate_ownership(
         return
     rph = _placeholders(rowids)
     own_rows = conn.execute(
-        f'SELECT card_rowid FROM "{OWNERSHIP_TABLE}" '
+        f'SELECT card_rowid, owned_count FROM "{OWNERSHIP_TABLE}" '
         f'WHERE table_name = ? AND card_rowid IN ({rph}) AND owned = 1',
         [table, *rowids],
     ).fetchall()
-    owned_rowids = {r["card_rowid"] for r in own_rows}
+    ownership_map = {r["card_rowid"]: int(r["owned_count"]) for r in own_rows}
     for card in cards:
-        card["_owned"] = int(card.get("_card_rowid", -1)) in owned_rowids
+        rowid = int(card.get("_card_rowid", -1))
+        if rowid in ownership_map:
+            card["_owned"] = True
+            card["_owned_count"] = max(1, ownership_map[rowid])
 
 
 def _sample_from_table(
@@ -208,10 +212,38 @@ def _sample_from_table(
         pool = [c for c in pool if (c.get("Name") or "") not in exclude_names]
     if not pool:
         if owned_only:
-            warnings.append(f"No owned cards available for {label} in selected decks.")
+            warnings.append(f"No owned {label} cards in selected decks.")
         else:
             warnings.append(f"No cards available for {label} in selected decks.")
         return []
+    if owned_only:
+        # Build a copies-weighted pool: each card appears owned_count times.
+        # Sampling from this pool without replacement naturally respects how
+        # many of each card you own while giving equal weight per copy.
+        weighted: list[dict[str, Any]] = []
+        for card in pool:
+            copies = int(card.get("_owned_count", 1))
+            weighted.extend([card] * copies)
+        random.shuffle(weighted)
+        total_copies = len(weighted)
+        if total_copies < count:
+            warnings.append(
+                f"Only {total_copies} owned {label} copies available "
+                f"(requested {count}); using all."
+            )
+        # Deduplicate while preserving draw order and copy limits.
+        seen_counts: dict[int, int] = {}
+        result: list[dict[str, Any]] = []
+        for card in weighted:
+            rowid = int(card.get("_card_rowid", -1))
+            limit = int(card.get("_owned_count", 1))
+            drawn = seen_counts.get(rowid, 0)
+            if drawn < limit:
+                result.append(card)
+                seen_counts[rowid] = drawn + 1
+            if len(result) == count:
+                break
+        return result
     if len(pool) < count:
         warnings.append(
             f"Only {len(pool)} {label} cards available (requested {count}); using all."
