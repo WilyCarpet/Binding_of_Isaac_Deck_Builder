@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   DECK_OPTIONS,
@@ -24,6 +25,9 @@ const LS_KEY = 'deckbuilder-saved-configs';
   styleUrl: './deck-builder.scss',
 })
 export class DeckBuilderComponent implements OnInit {
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
+
   ratio: 'o' | 'd' | 'c' = 'o';
   ratioValues: RatioValues = { ...OFFICIAL };
 
@@ -55,9 +59,17 @@ export class DeckBuilderComponent implements OnInit {
   readonly MONSTER_KEYS = MONSTER_KEYS;
   readonly TREASURE_KEYS = TREASURE_KEYS;
 
+  private get electronAPI(): Window['electronAPI'] | undefined {
+    return this.isBrowser ? window.electronAPI : undefined;
+  }
+
   async ngOnInit(): Promise<void> {
-    if (window.electronAPI) {
-      this.savedConfigs = await window.electronAPI.loadConfigs() as SavedConfig[];
+    if (!this.isBrowser) {
+      return;
+    }
+
+    if (this.electronAPI) {
+      this.savedConfigs = await this.electronAPI.loadConfigs() as SavedConfig[];
     } else {
       const raw = localStorage.getItem(LS_KEY);
       this.savedConfigs = raw ? JSON.parse(raw) : [];
@@ -110,6 +122,10 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   private async fetchLiveCount(): Promise<void> {
+    if (!this.isBrowser) {
+      return;
+    }
+
     const selected = this.getSelectedDecks();
     if (selected.length === 0) {
       this.liveCardCount = 0;
@@ -127,8 +143,8 @@ export class DeckBuilderComponent implements OnInit {
     };
     try {
       let response: { count: number };
-      if (window.electronAPI) {
-        response = await window.electronAPI.countDeck(payload as never);
+      if (this.electronAPI) {
+        response = await this.electronAPI.countDeck(payload as never);
       } else {
         const r = await fetch('http://127.0.0.1:5001/deck/count', {
           method: 'POST',
@@ -155,6 +171,10 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   async saveCurrentConfig(): Promise<void> {
+    if (!this.isBrowser) {
+      return;
+    }
+
     const name = this.configNameInput.trim();
     if (!name) return;
     const config: SavedConfig = {
@@ -166,10 +186,11 @@ export class DeckBuilderComponent implements OnInit {
       specplayers: this.specplayers,
       players: this.players,
       eternalshuffle: this.eternalshuffle,
+      ownedOnly: this.ownedOnly,
     };
-    if (window.electronAPI) {
-      await window.electronAPI.saveConfig(config);
-      this.savedConfigs = await window.electronAPI.loadConfigs() as SavedConfig[];
+    if (this.electronAPI) {
+      await this.electronAPI.saveConfig(config);
+      this.savedConfigs = await this.electronAPI.loadConfigs() as SavedConfig[];
     } else {
       const idx = this.savedConfigs.findIndex(c => c.name === name);
       if (idx >= 0) {
@@ -189,6 +210,7 @@ export class DeckBuilderComponent implements OnInit {
     this.specplayers = config.specplayers;
     this.players = config.players;
     this.eternalshuffle = config.eternalshuffle;
+    this.ownedOnly = config.ownedOnly ?? false;
     for (const d of [...this.coreDeckState, ...this.promoDeckState, ...this.otherDeckState]) {
       d.checked = config.selectedDecks.includes(d.code);
     }
@@ -196,9 +218,13 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   async deleteConfig(name: string): Promise<void> {
-    if (window.electronAPI) {
-      await window.electronAPI.deleteConfig(name);
-      this.savedConfigs = await window.electronAPI.loadConfigs() as SavedConfig[];
+    if (!this.isBrowser) {
+      return;
+    }
+
+    if (this.electronAPI) {
+      await this.electronAPI.deleteConfig(name);
+      this.savedConfigs = await this.electronAPI.loadConfigs() as SavedConfig[];
     } else {
       this.savedConfigs = this.savedConfigs.filter(c => c.name !== name);
       localStorage.setItem(LS_KEY, JSON.stringify(this.savedConfigs));
@@ -206,6 +232,10 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   async buildDeck(): Promise<void> {
+    if (!this.isBrowser) {
+      return;
+    }
+
     const selected = this.getSelectedDecks();
     if (selected.length === 0) {
       this.buildError = 'Select at least one deck.';
@@ -231,8 +261,8 @@ export class DeckBuilderComponent implements OnInit {
     try {
       let response: { deck: DeckResult; warnings: string[]; seed: string | null };
 
-      if (window.electronAPI) {
-        response = await window.electronAPI.buildDeck(payload as never);
+      if (this.electronAPI) {
+        response = await this.electronAPI.buildDeck(payload as never);
       } else {
         const r = await fetch('http://127.0.0.1:5001/deck/build', {
           method: 'POST',

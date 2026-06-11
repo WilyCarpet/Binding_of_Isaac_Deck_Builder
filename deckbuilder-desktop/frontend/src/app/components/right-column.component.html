@@ -116,10 +116,6 @@
 </div>
 
 <hr>
-<button class="build-btn" (click)="build.emit()" [disabled]="building">
-  {{ building ? 'Building...' : 'Build Deck' }}
-</button>
-
 <div class="form-row checkbox-row owned-only-row">
   <label for="ownedOnly">Use owned cards only</label>
   <input
@@ -128,6 +124,10 @@
     [ngModel]="ownedOnly"
     (ngModelChange)="ownedOnlyChange.emit($event)">
 </div>
+
+<button class="build-btn" (click)="build.emit()" [disabled]="building">
+  {{ building ? 'Building...' : 'Build Deck' }}
+</button>
 
 <p class="error" *ngIf="buildError">{{ buildError }}</p>
 

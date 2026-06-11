@@ -45,4 +45,5 @@ export interface SavedConfig {
     specplayers: boolean;
     players: number;
     eternalshuffle: boolean;
+    ownedOnly: boolean;
 }
